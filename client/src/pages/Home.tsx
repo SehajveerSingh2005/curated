@@ -149,7 +149,7 @@ export default function Home() {
           <h2 className="font-heading font-black text-5xl md:text-[7rem] leading-[0.85] tracking-tighter uppercase">
             DESIGN THE <br /> ARCHIVE.
           </h2>
-          <Button asChild className="h-16 px-16 text-[12px] font-black uppercase tracking-[0.3em] bg-white text-black hover:bg-white/80 rounded-none">
+          <Button asChild className="h-16 px-16 text-[12px] font-black uppercase tracking-[0.3em] bg-white text-black hover:bg-black/80 hover:text-white hover:border-white rounded-none">
             <Link to="/wardrobe">Get Started</Link>
           </Button>
         </div>
