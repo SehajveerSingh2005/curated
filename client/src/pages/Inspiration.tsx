@@ -14,46 +14,46 @@ export default function Inspiration() {
     : posts.filter((p) => p.tags.includes(activeTag));
 
   return (
-    <div className="pt-32 pb-20 max-w-[1800px] mx-auto px-8">
+    <div className="pt-24 pb-24 max-w-[1600px] mx-auto px-8">
+
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-12 mb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 mb-14 border-b border-border pb-10">
         <div>
-          <span className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground block mb-3">Archive</span>
-          <h1 className="font-heading font-black text-6xl md:text-8xl tracking-tighter uppercase leading-[0.8]">Discover</h1>
+          <span className="text-[10px] uppercase tracking-[0.45em] text-muted-foreground font-semibold block mb-4">
+            Style References &mdash; {filtered.length}
+          </span>
+          <h1 className="font-sans font-bold leading-[0.9] tracking-tight"
+            style={{ fontSize: 'clamp(48px, 7vw, 96px)' }}>
+            Discover
+          </h1>
         </div>
-        <p className="font-black text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-          {filtered.length} nodes indexed
-        </p>
       </div>
 
       {/* Tag Filter */}
-      <div className="flex flex-wrap gap-1 mb-20 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150">
+      <div className="flex flex-wrap gap-x-7 gap-y-3 mb-14">
         {ALL_TAGS.map((tag) => (
           <button
             key={tag}
-            className={`px-10 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all border
-              ${activeTag === tag 
-                ? 'bg-foreground text-background border-foreground' 
-                : 'bg-transparent text-muted-foreground border-transparent hover:border-foreground/10'}`}
             onClick={() => setActiveTag(tag)}
+            className={`text-[11px] uppercase tracking-[0.18em] pb-0.5 transition-all duration-200 font-medium
+              ${activeTag === tag
+                ? 'text-foreground border-b border-foreground'
+                : 'text-muted-foreground hover:text-foreground border-b border-transparent'
+              }`}
           >
             {tag}
           </button>
         ))}
       </div>
 
-      {/* Masonry Grid */}
-      <div className="columns-2 md:columns-4 lg:columns-6 gap-1 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
-        {filtered.map((post) => (
-          <InspirationCard key={post._id} post={post} />
-        ))}
+      {/* Masonry */}
+      <div className="columns-2 md:columns-3 lg:columns-4 gap-3">
+        {filtered.map((post) => <InspirationCard key={post._id} post={post} />)}
       </div>
 
       {filtered.length === 0 && (
-        <div className="py-40 text-center border">
-          <p className="font-sans font-bold text-xl uppercase tracking-tighter text-muted-foreground">
-            No results found.
-          </p>
+        <div className="py-40 text-center border border-dashed border-border">
+          <p className="font-heading text-3xl italic text-muted-foreground">No references found.</p>
         </div>
       )}
     </div>

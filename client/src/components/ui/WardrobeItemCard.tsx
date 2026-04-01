@@ -1,5 +1,4 @@
 import type { WardrobeItem } from '../../types';
-import { Card, CardContent } from "@/components/ui/card";
 
 interface Props {
   item: WardrobeItem;
@@ -8,22 +7,25 @@ interface Props {
 
 export default function WardrobeItemCard({ item }: Props) {
   return (
-    <Card className="group h-full bg-transparent border-none shadow-none rounded-none overflow-hidden cursor-pointer">
-      <div className="relative aspect-[3/4] overflow-hidden bg-muted">
-        <img 
-          src={item.imageUrl} 
-          alt={item.name} 
-          className="w-full h-full object-cover grayscale brightness-110 transition-transform duration-700 group-hover:scale-105"
+    <div className="group cursor-pointer">
+      <div className="relative aspect-[3/4] overflow-hidden bg-muted mb-3">
+        <img
+          src={item.imageUrl}
+          alt={item.name}
+          className="w-full h-full object-cover transition-all duration-700
+            group-hover:scale-[1.04]"
           loading="lazy"
         />
-        <div className="absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-background/90 backdrop-blur-sm border-t">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-center">Quick View</p>
+        {/* Hover label */}
+        <div className="absolute inset-x-0 bottom-0 bg-background/95 backdrop-blur-sm
+          translate-y-full group-hover:translate-y-0 transition-transform duration-300 px-4 py-3">
+          <p className="text-[9px] uppercase tracking-[0.25em] text-center font-medium text-foreground">
+            Quick View
+          </p>
         </div>
       </div>
-      <CardContent className="p-4 space-y-1">
-        <h3 className="text-[11px] font-bold uppercase tracking-widest truncate">{item.name}</h3>
-        <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">{item.category}</p>
-      </CardContent>
-    </Card>
+      <p className="text-[11px] font-medium leading-tight truncate mb-0.5 text-foreground">{item.name}</p>
+      <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{item.category}</p>
+    </div>
   );
 }
