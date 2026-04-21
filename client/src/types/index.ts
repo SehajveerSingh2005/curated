@@ -1,10 +1,12 @@
 export interface WardrobeItem {
   _id: string;
   name: string;
-  category: 'shirt' | 'pants' | 'shoes' | 'jacket' | 'dress' | 'accessory' | 'other';
+  category: 'shirt' | 't-shirt' | 'polo' | 'knitwear' | 'pants' | 'outerwear' | 'shoes' | 'accessory' | 'other';
   tags: string[];
   imageUrl: string;
   color?: string;
+  brand?: string;
+  fabric?: string;
   forSale?: boolean;
 }
 
