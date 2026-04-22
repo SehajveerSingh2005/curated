@@ -1,7 +1,7 @@
 export interface WardrobeItem {
   _id: string;
   name: string;
-  category: 'shirt' | 't-shirt' | 'polo' | 'knitwear' | 'pants' | 'outerwear' | 'shoes' | 'accessory' | 'other';
+  category: 'shirt' | 't-shirt' | 'polo' | 'knitwear' | 'pants' | 'outerwear' | 'jacket' | 'dress' | 'shoes' | 'accessory' | 'other';
   tags: string[];
   imageUrl: string;
   color?: string;

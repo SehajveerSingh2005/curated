@@ -32,6 +32,9 @@ router.post('/signup', async (req, res) => {
       }
     });
   } catch (err) {
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ message: Object.values(err.errors).map(val => val.message).join(', ') });
+    }
     console.error(err.message);
     res.status(500).send('Server Error');
   }
@@ -66,6 +69,9 @@ router.post('/login', async (req, res) => {
       }
     });
   } catch (err) {
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ message: Object.values(err.errors).map(val => val.message).join(', ') });
+    }
     console.error(err.message);
     res.status(500).send('Server Error');
   }
