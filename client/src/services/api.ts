@@ -30,4 +30,19 @@ export const marketplaceService = {
     api.post('/marketplace', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
 };
 
+// ── Auth ──────────────────────────────────────────────────
+export const authService = {
+  login: (data: any) => api.post('/auth/login', data),
+  signup: (data: any) => api.post('/auth/signup', data),
+};
+
+// ── Interceptor ───────────────────────────────────────────
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 export default api;
