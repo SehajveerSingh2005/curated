@@ -16,6 +16,8 @@ export const wardrobeService = {
 export const outfitService = {
   getAll: () => api.get('/outfits'),
   generate: () => api.post('/outfits/generate'),
+  save: (data: any) => api.post('/outfits', data),
+  delete: (id: string) => api.delete(`/outfits/${id}`),
 };
 
 // ── Inspiration ───────────────────────────────────────────
