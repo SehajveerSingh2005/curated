@@ -143,7 +143,7 @@ export default function OutfitCard({ outfit }: Props) {
                 <div className="space-y-16">
                   <div className="space-y-4">
                     <span className="font-mono text-[10px] uppercase tracking-[0.6em] text-foreground/40 font-black">Composition Breakdown</span>
-                    <h2 className="font-sans font-black text-5xl uppercase tracking-tighter leading-none">{outfit.name}</h2>
+                    <h2 className="font-sans font-black text-5xl uppercase tracking-tighter leading-none">{outfit.name || 'Untitled Look'}</h2>
                   </div>
 
                   <div className="space-y-12">

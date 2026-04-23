@@ -70,6 +70,7 @@ export const mockWardrobeItems: WardrobeItem[] = [
 export const mockOutfits: Outfit[] = [
   {
     _id: 'o1',
+    name: 'Monochrome Essential',
     items: [mockWardrobeItems[0], mockWardrobeItems[1], mockWardrobeItems[2]],
     explanation:
       'A timeless monochrome pairing — the crisp white Oxford balances the structured charcoal trousers. Clean white sneakers ground the look with an effortless edge, softening the formality just enough for smart-casual settings.',
@@ -78,6 +79,7 @@ export const mockOutfits: Outfit[] = [
   },
   {
     _id: 'o2',
+    name: 'Off-Duty Uniform',
     items: [mockWardrobeItems[4], mockWardrobeItems[5], mockWardrobeItems[2]],
     explanation:
       'The quintessential off-duty uniform. Black tee layered under raw indigo denim creates contrast without effort. White sneakers complete the palette — three neutrals that always work together.',
@@ -86,6 +88,7 @@ export const mockOutfits: Outfit[] = [
   },
   {
     _id: 'o3',
+    name: 'Camel Editorial',
     items: [mockWardrobeItems[3], mockWardrobeItems[0], mockWardrobeItems[1]],
     explanation:
       'Drape the camel overcoat over a white oxford and charcoal trousers for a clean editorial look. The warm camel tone acts as the statement piece while the neutrals below keep things refined.',

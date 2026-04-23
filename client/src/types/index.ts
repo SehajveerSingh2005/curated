@@ -4,10 +4,12 @@ export interface WardrobeItem {
   category: 'shirt' | 't-shirt' | 'polo' | 'knitwear' | 'pants' | 'outerwear' | 'jacket' | 'dress' | 'shoes' | 'accessory' | 'other';
   tags: string[];
   imageUrl: string;
+  cloudinaryPublicId?: string;
   color?: string;
   brand?: string;
   fabric?: string;
   forSale?: boolean;
+  createdAt?: string;
 }
 
 export interface OutfitItem {
@@ -16,9 +18,12 @@ export interface OutfitItem {
 
 export interface Outfit {
   _id: string;
+  name?: string;
   items: WardrobeItem[];
-  explanation: string;
+  explanation?: string;
   occasion?: string;
+  tags?: string[];
+  isFavorite?: boolean;
   createdAt: string;
 }
 
