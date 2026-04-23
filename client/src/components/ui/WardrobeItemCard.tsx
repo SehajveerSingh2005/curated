@@ -1,5 +1,6 @@
 import type { WardrobeItem } from '../../types';
 import { ArrowUpRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface Props {
   item: WardrobeItem;
@@ -38,7 +39,12 @@ export default function WardrobeItemCard({ item }: Props) {
       </div>
 
       {/* Metadata */}
-      <div className="space-y-4">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+        className="space-y-4"
+      >
         <div className="space-y-1">
           <div className="flex justify-between items-start gap-4">
             <h3 className="text-[13px] uppercase tracking-[0.2em] font-black leading-tight text-foreground/80 group-hover:text-foreground transition-colors">
@@ -64,7 +70,7 @@ export default function WardrobeItemCard({ item }: Props) {
              </span>
            ))}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

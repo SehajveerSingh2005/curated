@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, X, Search, Filter } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { WardrobeItem } from '../types';
 import WardrobeItemCard from '../components/ui/WardrobeItemCard';
 import { wardrobeService } from '../services/api';
@@ -261,7 +262,12 @@ export default function Wardrobe() {
   };
 
   return (
-    <div className="min-h-[120vh] bg-background text-foreground selection:bg-foreground selection:text-background font-sans">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+      className="min-h-[120vh] bg-background text-foreground selection:bg-foreground selection:text-background font-sans"
+    >
       
       {/* ─── STICKY HEADER WRAPPER ──────────────── */}
       <div className="sticky top-24 z-[45] bg-background/90 backdrop-blur-3xl border-b border-foreground/5 py-8">
@@ -341,20 +347,43 @@ export default function Wardrobe() {
             <p className="font-mono text-[10px] uppercase tracking-[0.5em] text-foreground/50 font-black animate-pulse">Scanning Archive...</p>
           </div>
         ) : filtered.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-x-px gap-y-20 border-l border-foreground/5">
-            {filtered.map((item) => (
-              <div key={item._id} className="border-r border-foreground/5 px-6 cursor-pointer" onClick={() => setSelectedItem(item)}>
-                <WardrobeItemCard item={item} />
-              </div>
-            ))}
-          </div>
+          <motion.div 
+            layout
+            initial="hidden"
+            animate="visible"
+            variants={{
+              visible: { transition: { staggerChildren: 0.1 } }
+            }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-x-px gap-y-20 border-l border-foreground/5"
+          >
+            <AnimatePresence mode="popLayout">
+              {filtered.map((item) => (
+                <motion.div
+                  layout
+                  key={item._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                  className="border-r border-foreground/5 px-6 cursor-pointer" 
+                  onClick={() => setSelectedItem(item)}
+                >
+                  <WardrobeItemCard item={item} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
         ) : (
-          <div className="py-40 flex flex-col items-center justify-center text-center border border-dashed border-foreground/10">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="py-40 flex flex-col items-center justify-center text-center border border-dashed border-foreground/10"
+          >
             <h2 className="font-serif italic text-6xl text-foreground/20 mb-8 select-none">Empty Space</h2>
             <p className="font-mono text-[10px] uppercase tracking-[0.5em] text-foreground/50 font-black max-w-xs leading-loose">
               No items match your current selection in the archive.
             </p>
-          </div>
+          </motion.div>
         )}
       </div>
 
@@ -560,6 +589,6 @@ export default function Wardrobe() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </motion.div>
   );
 }
