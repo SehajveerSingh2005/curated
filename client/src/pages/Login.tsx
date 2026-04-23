@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/api';
 import { ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
-import editorialImg from '../assets/login-editorial.png';
+import editorialImg from '../assets/login.webp';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -27,7 +27,7 @@ export default function Login() {
     }
 
     if (password.length < 8) {
-      setError('Security key must be at least 8 characters');
+      setError('Password must be at least 8 characters');
       return;
     }
 
@@ -44,20 +44,14 @@ export default function Login() {
   };
 
   return (
-    <div className="h-screen grid lg:grid-cols-2 bg-background selection:bg-foreground selection:text-background overflow-hidden">
+    <div className="h-screen grid lg:grid-cols-2 bg-background selection:bg-foreground selection:text-background overflow-hidden font-sans">
       {/* ─── IMAGE SIDE ─────────────────────────────────── */}
-      <div className="hidden lg:block relative overflow-hidden border-r border-foreground/5 bg-black">
+      <div className="hidden lg:flex relative flex-col items-center justify-center overflow-hidden border-r border-foreground/5 bg-black">
         <img 
           src={editorialImg} 
           alt="Editorial" 
-          className="w-full h-full object-cover grayscale opacity-50 hover:opacity-100 transition-all duration-[2000ms]"
+          className="absolute inset-0 w-full h-full object-cover transition-all duration-[2000ms]"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none"></div>
-        <div className="absolute bottom-12 left-12">
-            <h2 className="font-serif italic text-white text-[5vw] leading-none blend-diff reveal-up">
-              Systemized Style.
-            </h2>
-        </div>
       </div>
 
       {/* ─── FORM SIDE ──────────────────────────────────── */}
@@ -65,13 +59,13 @@ export default function Login() {
         <div className="max-w-md w-full mx-auto space-y-10">
           <header className="space-y-4 reveal-up">
             <span className="font-mono text-[10px] uppercase tracking-[0.5em] text-foreground/30 font-black">
-              Authentication // 01
+               Member Portal
             </span>
             <h1 className="font-sans font-black text-6xl tracking-tighter uppercase leading-none">
-              Login
+              Welcome Back
             </h1>
             <p className="font-mono text-[11px] uppercase tracking-[0.4em] text-foreground/40 leading-relaxed">
-              Access your digital wardrobe archive.
+              Login to access your digital wardrobe.
             </p>
           </header>
 
@@ -85,7 +79,7 @@ export default function Login() {
             <div className="space-y-8">
               <div className="group relative">
                 <label className="block text-[10px] uppercase tracking-[0.5em] font-black text-foreground/30 mb-2 group-focus-within:text-foreground transition-all">
-                  Identity (Email)
+                  Email Address
                 </label>
                 <input
                   type="email"
@@ -99,7 +93,7 @@ export default function Login() {
 
               <div className="group relative">
                 <label className="block text-[10px] uppercase tracking-[0.5em] font-black text-foreground/30 mb-2 group-focus-within:text-foreground transition-all">
-                  Security (Password)
+                  Password
                 </label>
                 <div className="relative">
                   <input
@@ -132,7 +126,7 @@ export default function Login() {
                 <div className={`w-4 h-4 border border-foreground/20 flex items-center justify-center transition-all ${remember ? 'bg-foreground border-foreground' : 'group-hover:border-foreground'}`}>
                   {remember && <div className="w-1.5 h-1.5 bg-background"></div>}
                 </div>
-                <span className="text-[10px] uppercase tracking-[0.4em] font-black text-foreground/40 group-hover:text-foreground transition-all">Remember Session</span>
+                <span className="text-[10px] uppercase tracking-[0.4em] font-black text-foreground/40 group-hover:text-foreground transition-all">Remember Me</span>
               </label>
 
               <button type="button" className="text-[10px] uppercase tracking-[0.4em] font-black text-foreground/30 hover:text-foreground transition-all">
@@ -150,7 +144,7 @@ export default function Login() {
                 {loading ? (
                   <Loader2 className="w-4 h-4 animate-spin mx-auto text-foreground" />
                 ) : (
-                  <>Authorize Access <ArrowRight className="w-4 h-4 group-hover:translate-x-2 transition-all" /></>
+                  <>Sign In <ArrowRight className="w-4 h-4 group-hover:translate-x-2 transition-all" /></>
                 )}
               </button>
             </div>
@@ -158,9 +152,9 @@ export default function Login() {
 
           <footer className="pt-10 border-t border-foreground/5 reveal-up [animation-delay:0.4s]">
             <p className="text-[10px] uppercase tracking-[0.4em] font-black text-foreground/20">
-              New to the system?{' '}
+              New Here?{' '}
               <Link to="/signup" className="text-foreground/40 hover:text-foreground transition-all border-b border-foreground/10 hover:border-foreground pb-1">
-                Establish Identity
+                Create Account
               </Link>
             </p>
           </footer>

@@ -24,19 +24,22 @@ app.get('/', (req, res) => {
 });
 
 // Database connection
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/curated';
+const MONGO_URI = process.env.MONGO_URI;
+
+if (!MONGO_URI) {
+  console.error('FATAL ERROR: MONGO_URI is not defined in .env');
+  process.exit(1);
+}
 
 mongoose.connect(MONGO_URI)
   .then(() => {
-    console.log('Connected to MongoDB');
+    const dbType = MONGO_URI.includes('atlassian') || MONGO_URI.includes('mongodb+srv') ? 'Cloud (Atlas)' : 'Local';
+    console.log(`Connected to MongoDB [${dbType}]`);
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });
   })
   .catch((err) => {
     console.error('Failed to connect to MongoDB:', err.message);
-    // Continue running server even if DB fails for now
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT} (Offline)`);
-    });
+    process.exit(1);
   });

@@ -26,7 +26,8 @@ const wardrobeItemSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: false, // Set to false for now if authentication isn't fully enforced yet, but recommended true
+    required: true,
+    index: true,
   },
 }, {
   timestamps: true,

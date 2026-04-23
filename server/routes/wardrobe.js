@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const WardrobeItem = require('../models/WardrobeItem');
+const auth = require('../middleware/auth');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -16,10 +17,10 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // @route   GET /api/wardrobe
-// @desc    Get all wardrobe items
-router.get('/', async (req, res) => {
+// @desc    Get current user's wardrobe items
+router.get('/', auth, async (req, res) => {
   try {
-    const items = await WardrobeItem.find().sort({ createdAt: -1 });
+    const items = await WardrobeItem.find({ userId: req.user.id }).sort({ createdAt: -1 });
     res.json(items);
   } catch (err) {
     console.error(err.message);
@@ -29,7 +30,7 @@ router.get('/', async (req, res) => {
 
 // @route   POST /api/wardrobe
 // @desc    Add a new wardrobe item
-router.post('/', upload.single('image'), async (req, res) => {
+router.post('/', [auth, upload.single('image')], async (req, res) => {
   try {
     const { name, category, tags, color, brand, fabric, forSale } = req.body;
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : req.body.imageUrl;
@@ -42,7 +43,8 @@ router.post('/', upload.single('image'), async (req, res) => {
       color,
       brand,
       fabric,
-      forSale: forSale === 'true'
+      forSale: forSale === 'true',
+      userId: req.user.id
     });
 
     const item = await newItem.save();
@@ -55,12 +57,17 @@ router.post('/', upload.single('image'), async (req, res) => {
 
 // @route   DELETE /api/wardrobe/:id
 // @desc    Delete a wardrobe item
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
   try {
     const item = await WardrobeItem.findById(req.params.id);
 
     if (!item) {
       return res.status(404).json({ msg: 'Item not found' });
+    }
+
+    // Check user ownership
+    if (item.userId.toString() !== req.user.id) {
+      return res.status(401).json({ msg: 'User not authorized' });
     }
 
     await item.deleteOne();
