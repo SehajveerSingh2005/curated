@@ -6,6 +6,7 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
 const wardrobeRoutes = require('./routes/wardrobe');
+const outfitRoutes = require('./routes/outfits');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -18,6 +19,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/wardrobe', wardrobeRoutes);
+app.use('/api/outfits', outfitRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Curated API is running' });
