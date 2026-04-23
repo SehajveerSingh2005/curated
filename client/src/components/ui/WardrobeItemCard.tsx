@@ -19,7 +19,7 @@ export default function WardrobeItemCard({ item }: Props) {
           src={imageUrl}
           alt={item.name}
           className="w-full h-full object-cover transition-all duration-[1200ms] ease-out
-            grayscale hover:grayscale-0 scale-100 group-hover:scale-105"
+            scale-100 group-hover:scale-105"
           loading="lazy"
         />
         
