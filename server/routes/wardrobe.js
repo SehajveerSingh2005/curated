@@ -5,14 +5,7 @@ const path = require('path');
 const WardrobeItem = require('../models/WardrobeItem');
 const auth = require('../middleware/auth');
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
-});
+const { storage, cloudinary } = require('../config/cloudinary');
 
 const upload = multer({ storage });
 
@@ -33,13 +26,15 @@ router.get('/', auth, async (req, res) => {
 router.post('/', [auth, upload.single('image')], async (req, res) => {
   try {
     const { name, category, tags, color, brand, fabric, forSale } = req.body;
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : req.body.imageUrl;
+    const imageUrl = req.file ? req.file.path : req.body.imageUrl;
+    const cloudinaryPublicId = req.file ? req.file.filename : null;
 
     const newItem = new WardrobeItem({
       name,
       category,
       tags: tags ? JSON.parse(tags) : [],
       imageUrl,
+      cloudinaryPublicId,
       color,
       brand,
       fabric,
@@ -68,6 +63,16 @@ router.delete('/:id', auth, async (req, res) => {
     // Check user ownership
     if (item.userId.toString() !== req.user.id) {
       return res.status(401).json({ msg: 'User not authorized' });
+    }
+
+    // Delete image from Cloudinary if it exists
+    if (item.cloudinaryPublicId) {
+      try {
+        await cloudinary.uploader.destroy(item.cloudinaryPublicId);
+      } catch (cloudinaryErr) {
+        console.error('Error deleting image from Cloudinary:', cloudinaryErr);
+        // We continue with database deletion even if Cloudinary fails
+      }
     }
 
     await item.deleteOne();

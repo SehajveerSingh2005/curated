@@ -43,3 +43,13 @@ mongoose.connect(MONGO_URI)
     console.error('Failed to connect to MongoDB:', err.message);
     process.exit(1);
   });
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Global Error Handler:', err);
+  res.status(500).json({
+    message: 'Internal Server Error',
+    error: err.message,
+    stack: err.stack
+  });
+});

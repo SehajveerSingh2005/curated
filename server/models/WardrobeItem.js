@@ -16,6 +16,9 @@ const wardrobeItemSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  cloudinaryPublicId: {
+    type: String,
+  },
   color: String,
   brand: String,
   fabric: String,
