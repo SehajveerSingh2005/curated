@@ -266,7 +266,7 @@ export default function Wardrobe() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-      className="min-h-[120vh] bg-background text-foreground selection:bg-foreground selection:text-background font-sans"
+      className="min-h-[120vh] pt-24 bg-background text-foreground selection:bg-foreground selection:text-background font-sans"
     >
       
       {/* ─── STICKY HEADER WRAPPER ──────────────── */}

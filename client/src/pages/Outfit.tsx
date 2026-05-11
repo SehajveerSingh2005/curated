@@ -98,7 +98,7 @@ export default function OutfitPage() {
   };
 
   return (
-    <div className="min-h-[120vh] bg-background text-foreground font-sans selection:bg-foreground selection:text-background pb-32">
+    <div className="min-h-[120vh] pt-24 bg-background text-foreground font-sans selection:bg-foreground selection:text-background pb-32">
       
       {/* ─── STICKY HEADER WRAPPER (MATCHING WARDROBE) ──────────────── */}
       <div className="sticky top-24 z-[45] bg-background/90 backdrop-blur-3xl border-b border-foreground/5 py-8">
