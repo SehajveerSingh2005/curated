@@ -19,6 +19,7 @@ export default function Wardrobe() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<WardrobeItem | null>(null);
+  const [editItemId, setEditItemId] = useState<string | null>(null);
 
   // Form State
   const [newItem, setNewItem] = useState({
@@ -89,7 +90,6 @@ export default function Wardrobe() {
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
-      setNewItem({ ...newItem, file });
       const reader = new FileReader();
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
@@ -189,50 +189,90 @@ export default function Wardrobe() {
     };
   }, [isDragging, startPos, imgAspect]);
 
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  const getCroppedImageBlob = async (): Promise<Blob | null> => {
+    if (!newItem.imageUrl) return null;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    const loadPromise = new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = () => reject(new Error("Failed to load image for cropping"));
+    });
+    img.src = newItem.imageUrl;
+    await loadPromise;
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error("Could not initialize canvas context");
+
+    const sw = (cropBox.width / 100) * img.naturalWidth;
+    const sh = (cropBox.height / 100) * img.naturalHeight;
+    const sx = (cropBox.left / 100) * img.naturalWidth;
+    const sy = (cropBox.top / 100) * img.naturalHeight;
+
+    canvas.width = 1200;
+    canvas.height = 1500;
+
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+
+    return new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+  };
+
+  const handleAITagging = async () => {
+    setIsAnalyzing(true);
+    try {
+      const blob = await getCroppedImageBlob();
+      if (!blob) throw new Error('No image available');
+
+      const reader = new FileReader();
+      const dataUrlPromise = new Promise<string>((resolve) => {
+        reader.onloadend = () => resolve(reader.result as string);
+      });
+      reader.readAsDataURL(blob);
+      const croppedDataUrl = await dataUrlPromise;
+
+      const res = await wardrobeService.analyze({ imageBase64: croppedDataUrl });
+      const details = res.data;
+      
+      setNewItem(prev => ({
+        ...prev,
+        name: details.name || prev.name,
+        category: (details.category || prev.category) as WardrobeItem['category'],
+        brand: details.brand || prev.brand,
+        fabric: details.fabric || prev.fabric,
+        color: details.color || prev.color,
+        tags: details.tags && details.tags.length > 0 ? details.tags : prev.tags
+      }));
+    } catch (err: any) {
+      console.error('AI tagging failed:', err);
+      const errorMsg = err.response?.data?.msg || err.response?.data?.error || err.message;
+      alert(`Failed to auto-tag image: ${errorMsg}`);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newItem.imageUrl) {
+    if (!newItem.imageUrl && !editItemId) {
       alert("Please add an image first.");
       return;
     }
 
     setIsSaving(true);
     try {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-
-      const loadPromise = new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = () => reject(new Error("Failed to load image for cropping"));
-      });
-
-      img.src = newItem.imageUrl;
-      await loadPromise;
-
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error("Could not initialize canvas context");
-
-      // Calculate selection in pixels
-      // Since the preview container now matches the image aspect ratio, 
-      // cropBox percentages are direct maps to the natural pixels.
-      const sw = (cropBox.width / 100) * img.naturalWidth;
-      const sh = (cropBox.height / 100) * img.naturalHeight;
-      const sx = (cropBox.left / 100) * img.naturalWidth;
-      const sy = (cropBox.top / 100) * img.naturalHeight;
-
-      canvas.width = 1200;
-      canvas.height = 1500;
-
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
-
-      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
-      if (!blob) throw new Error("Failed to create image blob");
-
       const formData = new FormData();
-      formData.append('image', blob, 'cropped.jpg');
+      
+      // If we have a file (new upload or replaced image), crop and attach it
+      if (newItem.file) {
+        const blob = await getCroppedImageBlob();
+        if (!blob) throw new Error("Failed to create image blob");
+        formData.append('image', blob, 'cropped.jpg');
+      }
+
       formData.append('name', newItem.name);
       formData.append('category', newItem.category);
       formData.append('brand', newItem.brand || '');
@@ -240,7 +280,14 @@ export default function Wardrobe() {
       formData.append('color', newItem.color || '');
       formData.append('tags', JSON.stringify(newItem.tags));
 
-      await wardrobeService.addItem(formData);
+      if (editItemId) {
+        await wardrobeService.updateItem(editItemId, formData);
+      } else {
+        await wardrobeService.addItem(formData);
+      }
+
+      setShowModal(false);
+      setEditItemId(null);
 
       setShowModal(false);
       setNewItem({
@@ -304,7 +351,20 @@ export default function Wardrobe() {
                 />
               </div>
               <button
-                onClick={() => setShowModal(true)}
+                onClick={() => {
+                  setEditItemId(null);
+                  setNewItem({
+                    name: '',
+                    category: 'shirt',
+                    tags: [],
+                    imageUrl: '',
+                    brand: '',
+                    fabric: '',
+                    color: '',
+                    file: null,
+                  });
+                  setShowModal(true);
+                }}
                 className="flex items-center justify-center gap-3 bg-foreground text-background px-8 py-3.5 font-black hover:opacity-90 transition-all shadow-xl uppercase tracking-[0.3em] text-[10px]"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -402,6 +462,14 @@ export default function Wardrobe() {
             >
               {newItem.imageUrl ? (
                 <div className="relative w-full h-full flex items-center justify-center p-8 lg:p-12">
+                   {isAnalyzing && (
+                     <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+                        <div className="flex flex-col items-center gap-4">
+                           <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                           <span className="text-white font-mono text-[10px] uppercase tracking-widest font-black animate-pulse">AI Parsing Visual...</span>
+                        </div>
+                     </div>
+                   )}
                    <div className="relative max-w-full max-h-full shadow-2xl" 
                         style={{ aspectRatio: imgAspect, height: 'auto', width: imgAspect > 1.2 ? '100%' : 'auto', maxHeight: '100%' }}>
                     <img src={newItem.imageUrl} className="w-full h-full block" alt="Preview" />
@@ -444,16 +512,18 @@ export default function Wardrobe() {
                   </div>
                   <input type="file" id="file-upload" className="hidden" accept="image/*" onChange={(e) => {
                     if (e.target.files?.[0]) {
+                      const file = e.target.files[0];
                       const reader = new FileReader();
                       reader.onloadend = () => {
+                        const dataUrl = reader.result as string;
                         const img = new Image();
                         img.onload = () => {
                           setImgAspect(img.naturalWidth / img.naturalHeight);
-                          setNewItem({ ...newItem, imageUrl: reader.result as string, file: e.target.files![0] });
+                          setNewItem(prev => ({ ...prev, imageUrl: dataUrl, file }));
                         };
-                        img.src = reader.result as string;
+                        img.src = dataUrl;
                       };
-                      reader.readAsDataURL(e.target.files[0]);
+                      reader.readAsDataURL(file);
                     }
                   }} />
                   <label htmlFor="file-upload" className="inline-block border border-foreground/20 px-8 py-3 text-[9px] uppercase tracking-[0.3em] font-black cursor-pointer hover:bg-foreground hover:text-background transition-all">SELECT FILE</label>
@@ -465,7 +535,23 @@ export default function Wardrobe() {
               <div className="space-y-10 max-w-sm mx-auto w-full py-8">
                 <div className="space-y-4">
                   <span className="font-mono text-[11px] uppercase tracking-[0.5em] text-foreground/60 font-black">Step 01 // ENTRY</span>
-                  <h2 className="font-sans font-black text-4xl uppercase tracking-tighter">New Piece</h2>
+                  <div className="flex items-center justify-between">
+                    <h2 className="font-sans font-black text-4xl uppercase tracking-tighter">{editItemId ? 'Edit Piece' : 'New Piece'}</h2>
+                    {newItem.imageUrl && (
+                      <button 
+                        type="button" 
+                        onClick={handleAITagging}
+                        disabled={isAnalyzing}
+                        className="flex items-center gap-2 text-[9px] uppercase tracking-widest font-black bg-foreground text-background px-4 py-2 hover:opacity-90 transition-all shadow-md disabled:opacity-50"
+                      >
+                        {isAnalyzing ? (
+                          <div className="w-3 h-3 border-2 border-background/20 border-t-background rounded-full animate-spin"></div>
+                        ) : (
+                          <span>✨ AI Tag</span>
+                        )}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <form className="space-y-8" onSubmit={handleSubmit}>
@@ -504,8 +590,8 @@ export default function Wardrobe() {
                       ))}
                     </div>
                   </div>
-                  <button type="submit" disabled={!newItem.name || !newItem.imageUrl || isSaving} className="w-full bg-foreground text-background py-4 text-[10px] uppercase tracking-[0.5em] font-black hover:opacity-90 transition-all disabled:opacity-20 disabled:cursor-not-allowed mt-6 shadow-xl">
-                    {isSaving ? 'Archiving...' : 'Archive Piece'}
+                  <button type="submit" disabled={!newItem.name || (!newItem.imageUrl && !editItemId) || isSaving} className="w-full bg-foreground text-background py-4 text-[10px] uppercase tracking-[0.5em] font-black hover:opacity-90 transition-all disabled:opacity-20 disabled:cursor-not-allowed mt-6 shadow-xl">
+                    {isSaving ? (editItemId ? 'Saving...' : 'Archiving...') : (editItemId ? 'Save Changes' : 'Archive Piece')}
                   </button>
                 </form>
               </div>
@@ -580,7 +666,32 @@ export default function Wardrobe() {
                      className="flex-1 border border-foreground/10 py-5 px-8 text-[10px] lg:text-[11px] uppercase tracking-[0.5em] font-black hover:bg-red-500 hover:text-white hover:border-red-500 transition-all whitespace-nowrap">
                      Remove
                    </button>
-                   <button className="flex-1 bg-foreground text-background py-5 px-8 text-[10px] lg:text-[11px] uppercase tracking-[0.2em] font-black hover:opacity-90 transition-all shadow-2xl whitespace-nowrap">
+                   <button 
+                     onClick={() => {
+                       setEditItemId(selectedItem._id);
+                       setNewItem({
+                         name: selectedItem.name,
+                         category: selectedItem.category,
+                         tags: selectedItem.tags || [],
+                         imageUrl: selectedItem.imageUrl?.startsWith('/') 
+                           ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${selectedItem.imageUrl}` 
+                           : selectedItem.imageUrl,
+                         brand: selectedItem.brand || '',
+                         fabric: selectedItem.fabric || '',
+                         color: selectedItem.color || '',
+                         file: null
+                       });
+                       const img = new Image();
+                       img.crossOrigin = "anonymous";
+                       img.onload = () => setImgAspect(img.naturalWidth / img.naturalHeight);
+                       img.src = selectedItem.imageUrl?.startsWith('/') 
+                         ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${selectedItem.imageUrl}` 
+                         : selectedItem.imageUrl;
+                         
+                       setSelectedItem(null);
+                       setShowModal(true);
+                     }}
+                     className="flex-1 bg-foreground text-background py-5 px-8 text-[10px] lg:text-[11px] uppercase tracking-[0.2em] font-black hover:opacity-90 transition-all shadow-2xl whitespace-nowrap">
                      Edit Details
                    </button>
                 </div>

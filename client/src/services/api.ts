@@ -10,6 +10,8 @@ export const wardrobeService = {
   getAll: () => api.get('/wardrobe'),
   addItem: (data: FormData) => api.post('/wardrobe', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
   deleteItem: (id: string) => api.delete(`/wardrobe/${id}`),
+  updateItem: (id: string, data: FormData) => api.put(`/wardrobe/${id}`, data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  analyze: (data: { imageBase64: string }) => api.post('/wardrobe/analyze', data),
 };
 
 // ── Outfits ───────────────────────────────────────────────
