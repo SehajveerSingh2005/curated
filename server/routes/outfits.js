@@ -3,6 +3,7 @@ const router = express.Router();
 const Outfit = require('../models/Outfit');
 const WardrobeItem = require('../models/WardrobeItem');
 const auth = require('../middleware/auth');
+const { GoogleGenAI } = require('@google/genai');
 
 // @route   GET /api/outfits
 // @desc    Get user's saved outfits
@@ -63,64 +64,73 @@ router.post('/generate', auth, async (req, res) => {
   try {
     const items = await WardrobeItem.find({ userId: req.user.id });
     
-    if (items.length === 0) {
-      return res.status(400).json({ msg: 'Archive is empty. Add pieces first.' });
+    if (items.length < 2) {
+      return res.status(400).json({ msg: 'Archive too small. Add more pieces first.' });
     }
 
-    // Grouping
-    const tops = items.filter(i => ['shirt', 't-shirt', 'polo', 'knitwear'].includes(i.category));
-    const bottoms = items.filter(i => i.category === 'pants');
-    const shoes = items.filter(i => i.category === 'shoes');
-    const outer = items.filter(i => i.category === 'outerwear');
-    const accessories = items.filter(i => i.category === 'accessory');
-
-    if (tops.length === 0 || bottoms.length === 0) {
-      return res.status(400).json({ msg: 'Insufficient variety to compose looks. Ensure you have at least one top and one bottom.' });
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(400).json({ msg: 'GEMINI_API_KEY is not configured in the server environment.' });
     }
 
-    const suggestions = [];
-    const seenCombos = new Set();
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     
-    // Generate all possible core combinations
-    for (const top of tops) {
-      for (const bottom of bottoms) {
-        // If shoes exist, we can create versions with and without shoes
-        const baseItems = [top, bottom];
-        
-        // Option 1: Top + Bottom only
-        const comboKey = `${top._id}-${bottom._id}`;
-        if (!seenCombos.has(comboKey)) {
-          suggestions.push({
-            name: `Composition ${suggestions.length + 1}`,
-            items: baseItems,
-            occasion: 'casual'
-          });
-          seenCombos.add(comboKey);
-        }
+    // Prepare the items payload for the AI
+    const wardrobeData = items.map(i => ({
+      id: i._id,
+      category: i.category,
+      name: i.name,
+      color: i.color,
+      fabric: i.fabric,
+      brand: i.brand,
+      tags: i.tags
+    }));
 
-        // Option 2: Top + Bottom + Shoe (if shoes exist)
-        if (shoes.length > 0) {
-          for (const shoe of shoes) {
-            const comboWithShoeKey = `${top._id}-${bottom._id}-${shoe._id}`;
-            if (!seenCombos.has(comboWithShoeKey)) {
-              suggestions.push({
-                name: `Composition ${suggestions.length + 1}`,
-                items: [...baseItems, shoe],
-                occasion: 'casual'
-              });
-              seenCombos.add(comboWithShoeKey);
-            }
-          }
-        }
+    const promptText = `
+You are a high-end fashion stylist. The user has the following wardrobe items:
+${JSON.stringify(wardrobeData, null, 2)}
+
+Create 3 to 5 stylish, highly cohesive, minimal outfit combinations from these items. 
+Each outfit must make sense aesthetically (color blocking, textures, brand synergy).
+Do not just mix random items. An outfit generally needs at least a top and a bottom. It can also include outerwear, shoes, and accessories/hats. Make sure items in an outfit actually match.
+Return ONLY JSON matching this exact schema:
+[
+  {
+    "name": "Outfit Name (e.g. Minimalist Tech, Earth Tones)",
+    "occasion": "casual",
+    "items": ["<id1>", "<id2>", "<id3>"] 
+  }
+]
+IMPORTANT: "items" must be an array of the exact item IDs provided above.
+`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [
+        { role: 'user', parts: [{ text: promptText }] }
+      ],
+      config: {
+        responseMimeType: "application/json",
       }
+    });
+
+    let jsonResult;
+    try {
+      const cleaned = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
+      jsonResult = JSON.parse(cleaned);
+    } catch (e) {
+      return res.status(500).json({ msg: 'Failed to parse AI response' });
     }
 
-    // Add some randomness and limit to 8 suggestions max
-    const finalSuggestions = suggestions
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 8);
+    // Map back the actual items to the IDs
+    const populatedSuggestions = jsonResult.map(outfit => {
+      return {
+        name: outfit.name,
+        occasion: outfit.occasion || 'casual',
+        items: outfit.items.map(id => items.find(i => i._id.toString() === id)).filter(Boolean)
+      };
+    });
 
-    res.json(finalSuggestions);
+    res.json(populatedSuggestions);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');

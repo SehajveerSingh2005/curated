@@ -25,7 +25,7 @@ export default function Navbar() {
   const isHeroMode = isHome && !scrolled;
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-40 h-24 bg-transparent transition-colors duration-500">
+    <nav className={`fixed top-0 left-0 right-0 z-50 h-24 transition-colors duration-500 ${isHeroMode ? 'bg-transparent' : 'bg-background/95 backdrop-blur-md border-b border-foreground/5'}`}>
       <div className="max-w-[1700px] mx-auto px-8 h-full flex items-center justify-between">
         
         {/* Wordmark */}
