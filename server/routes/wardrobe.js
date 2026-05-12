@@ -103,7 +103,7 @@ router.put('/:id', [auth, upload.single('image')], async (req, res) => {
     item = await WardrobeItem.findByIdAndUpdate(
       req.params.id,
       { $set: updateData },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     res.json(item);

@@ -26,19 +26,19 @@ export default function OutfitCard({ outfit }: Props) {
           <div className="relative w-full h-full max-w-[320px] mx-auto">
             {/* Background Item (Top Right) */}
             {outfit.items[1] && (
-              <div className="absolute top-[10%] right-[2%] w-[48%] aspect-[4/5] overflow-hidden border border-foreground/5 shadow-2xl transition-transform duration-1000 group-hover:translate-x-4 group-hover:-translate-y-2">
+              <div className="absolute top-[10%] right-[2%] w-[48%] aspect-[4/5] overflow-hidden transition-transform duration-1000 group-hover:translate-x-4 group-hover:-translate-y-2">
                 <img src={getImageUrl(outfit.items[1].imageUrl)} alt="" className="w-full h-full object-cover grayscale-[0.3] hover:grayscale-0 transition-all duration-700" />
               </div>
             )}
             {/* Middle Item (Top Left) */}
             {outfit.items[0] && (
-              <div className="absolute top-[5%] left-[0%] w-[52%] aspect-[4/5] overflow-hidden border border-foreground/5 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.15)] z-10 transition-transform duration-1000 group-hover:-translate-x-4 group-hover:-translate-y-4">
+              <div className="absolute top-[5%] left-[0%] w-[52%] aspect-[4/5] overflow-hidden z-10 transition-transform duration-1000 group-hover:-translate-x-4 group-hover:-translate-y-4">
                 <img src={getImageUrl(outfit.items[0].imageUrl)} alt="" className="w-full h-full object-cover grayscale-[0.2] hover:grayscale-0 transition-all duration-700" />
               </div>
             )}
             {/* Front Item (Bottom) */}
             {outfit.items[2] && (
-              <div className="absolute bottom-[0%] left-[24%] w-[42%] aspect-[4/5] overflow-hidden border border-foreground/10 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.25)] z-20 transition-transform duration-1000 group-hover:translate-y-6">
+              <div className="absolute bottom-[0%] left-[24%] w-[42%] aspect-[4/5] overflow-hidden z-20 transition-transform duration-1000 group-hover:translate-y-6">
                 <img src={getImageUrl(outfit.items[2].imageUrl)} alt="" className="w-full h-full object-cover hover:scale-110 transition-all duration-1000" />
               </div>
             )}
@@ -94,7 +94,7 @@ export default function OutfitCard({ outfit }: Props) {
                    <div className="h-[15%] w-full flex justify-center z-[60] transform -rotate-[6deg] -translate-x-8">
                       {outfit.items.filter(i => i.category === 'accessory' || i.category === 'other')
                         .slice(0, 1).map(item => (
-                        <div key={item._id} className="h-full aspect-square shadow-2xl border border-white/40 animate-in fade-in zoom-in-95 duration-700">
+                        <div key={item._id} className="h-full aspect-square animate-in fade-in zoom-in-95 duration-700">
                            <img src={getImageUrl(item.imageUrl)} className="w-full h-full object-contain p-1" alt="" />
                         </div>
                       ))}
@@ -104,7 +104,7 @@ export default function OutfitCard({ outfit }: Props) {
                    <div className="h-[40%] w-full flex justify-center -mt-8 z-40 transform rotate-[4deg] translate-x-6">
                       {outfit.items.filter(i => ['shirt', 't-shirt', 'polo', 'knitwear', 'outerwear'].includes(i.category))
                         .slice(0, 1).map(item => (
-                        <div key={item._id} className="h-full aspect-[4/5] shadow-xl border border-white/30 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                        <div key={item._id} className="h-full aspect-[4/5] animate-in fade-in slide-in-from-bottom-4 duration-700">
                            <img src={getImageUrl(item.imageUrl)} className="w-full h-full object-contain" alt="" />
                         </div>
                       ))}
@@ -114,7 +114,7 @@ export default function OutfitCard({ outfit }: Props) {
                    <div className="h-[50%] w-full flex justify-center -mt-24 z-50 transform -rotate-[3deg] -translate-x-10">
                       {outfit.items.filter(i => i.category === 'pants')
                         .slice(0, 1).map(item => (
-                        <div key={item._id} className="h-full aspect-[3/5] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.4)] border border-white/50 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+                        <div key={item._id} className="h-full aspect-[3/5] animate-in fade-in slide-in-from-bottom-8 duration-1000">
                            <img src={getImageUrl(item.imageUrl)} className="w-full h-full object-contain" alt="" />
                         </div>
                       ))}
@@ -124,7 +124,7 @@ export default function OutfitCard({ outfit }: Props) {
                    <div className="h-[18%] w-full flex justify-center -mt-16 z-[60] transform rotate-[8deg] translate-x-12">
                       {outfit.items.filter(i => i.category === 'shoes')
                         .slice(0, 1).map(item => (
-                        <div key={item._id} className="h-full aspect-[1.3/1] shadow-2xl border border-white/40 animate-in fade-in slide-in-from-bottom-12 duration-1000">
+                        <div key={item._id} className="h-full aspect-[1.3/1] animate-in fade-in slide-in-from-bottom-12 duration-1000">
                            <img src={getImageUrl(item.imageUrl)} className="w-full h-full object-contain p-2" alt="" />
                         </div>
                       ))}

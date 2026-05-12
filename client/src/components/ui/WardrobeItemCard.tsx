@@ -14,7 +14,7 @@ export default function WardrobeItemCard({ item }: Props) {
   return (
     <div className="group cursor-pointer space-y-8">
       {/* Visual Container */}
-      <div className="relative aspect-[4/5] overflow-hidden bg-alt border border-foreground/5">
+      <div className="relative aspect-[4/5] overflow-hidden bg-white">
         <img
           src={imageUrl}
           alt={item.name}
@@ -22,24 +22,17 @@ export default function WardrobeItemCard({ item }: Props) {
             scale-100 group-hover:scale-105"
           loading="lazy"
         />
-        
-        {/* Unit Label (Mono) */}
-        <div className="absolute top-4 left-4 mix-blend-difference">
-          <span className="font-mono text-[8px] uppercase tracking-[0.4em] text-white font-black opacity-40">
-            INDEX // {item._id.slice(-4).toUpperCase()}
-          </span>
-        </div>
 
         {/* Hover Action Overlay */}
         <div className="absolute inset-x-0 bottom-0 p-6 flex justify-end translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-expo">
-           <div className="bg-background w-12 h-12 flex items-center justify-center border border-foreground/5 shadow-2xl">
-              <ArrowUpRight className="w-4 h-4 text-foreground group-hover:rotate-45 transition-transform duration-500" />
-           </div>
+          <div className="bg-background w-12 h-12 flex items-center justify-center border border-foreground/5 shadow-2xl">
+            <ArrowUpRight className="w-4 h-4 text-foreground group-hover:rotate-45 transition-transform duration-500" />
+          </div>
         </div>
       </div>
 
       {/* Metadata */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
@@ -61,14 +54,14 @@ export default function WardrobeItemCard({ item }: Props) {
             </div>
           )}
         </div>
-        
+
         {/* Tag Stream */}
         <div className="flex flex-wrap gap-x-4 gap-y-2">
-           {item.tags?.map(tag => (
-             <span key={tag} className="font-mono text-[9px] uppercase tracking-[0.2em] text-foreground/30 font-black">
-               #{tag}
-             </span>
-           ))}
+          {item.tags?.map(tag => (
+            <span key={tag} className="font-mono text-[9px] uppercase tracking-[0.2em] text-foreground/30 font-black">
+              #{tag}
+            </span>
+          ))}
         </div>
       </motion.div>
     </div>

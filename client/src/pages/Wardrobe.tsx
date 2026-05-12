@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { WardrobeItem } from '../types';
 import WardrobeItemCard from '../components/ui/WardrobeItemCard';
 import { wardrobeService } from '../services/api';
+import { removeBackground } from '@imgly/background-removal';
 import {
   Dialog,
   DialogContent,
@@ -34,11 +35,35 @@ export default function Wardrobe() {
   });
   const [tagInput, setTagInput] = useState('');
   const [dragActive, setDragActive] = useState(false);
-  const [cropBox, setCropBox] = useState({ top: 10, left: 20, width: 60, height: 75 }); // 4:5 init
+  const [cropBox, setCropBox] = useState({ top: 10, left: 10, width: 80, height: 80 }); 
   const [isDragging, setIsDragging] = useState<string | null>(null);
   const [startPos, setStartPos] = useState({ x: 0, y: 0, top: 0, left: 0, width: 0, height: 0 });
   const [imgAspect, setImgAspect] = useState(1);
   const [scrollProgress, setScrollProgress] = useState(0);
+
+  // Sync crop box to 4:5 ratio when image aspect changes
+  useEffect(() => {
+    if (!newItem.imageUrl) return;
+    
+    // Desired ratio (W/H) is 0.8
+    // (width / height) * imgAspect = 0.8
+    // width / height = 0.8 / imgAspect
+    
+    let width = 80;
+    let height = (width * imgAspect) / 0.8;
+    
+    if (height > 80) {
+      height = 80;
+      width = (height * 0.8) / imgAspect;
+    }
+    
+    setCropBox({
+      top: (100 - height) / 2,
+      left: (100 - width) / 2,
+      width,
+      height
+    });
+  }, [imgAspect, newItem.imageUrl === '']); // Trigger on aspect change or when image is cleared/reset
 
   useEffect(() => {
     const handleScroll = () => {
@@ -190,6 +215,7 @@ export default function Wardrobe() {
   }, [isDragging, startPos, imgAspect]);
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isRemovingBackground, setIsRemovingBackground] = useState(false);
 
   const getCroppedImageBlob = async (): Promise<Blob | null> => {
     if (!newItem.imageUrl) return null;
@@ -216,7 +242,7 @@ export default function Wardrobe() {
 
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
 
-    return new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+    return new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
   };
 
   const handleAITagging = async () => {
@@ -252,6 +278,39 @@ export default function Wardrobe() {
       setIsAnalyzing(false);
     }
   };
+  
+  const handleManualBGRemoval = async () => {
+    if (!newItem.imageUrl) return;
+    setIsRemovingBackground(true);
+    try {
+      // If it's a remote URL, we need to fetch it first
+      let blob: Blob;
+      if (newItem.imageUrl.startsWith('data:')) {
+        const response = await fetch(newItem.imageUrl);
+        blob = await response.blob();
+      } else {
+        // For remote Cloudinary URLs, we need to bypass potential CORS issues or ensure they are handled
+        const response = await fetch(newItem.imageUrl, { mode: 'cors' });
+        blob = await response.blob();
+      }
+      
+      const processedBlob = await removeBackground(blob);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewItem(prev => ({ 
+          ...prev, 
+          imageUrl: reader.result as string,
+          file: new File([processedBlob], 'processed.png', { type: 'image/png' })
+        }));
+      };
+      reader.readAsDataURL(processedBlob);
+    } catch (err) {
+      console.error('Manual BG removal failed:', err);
+      alert('Failed to remove background. If this is an existing image, it might be a CORS restriction.');
+    } finally {
+      setIsRemovingBackground(false);
+    }
+  };
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -263,14 +322,30 @@ export default function Wardrobe() {
     }
 
     setIsSaving(true);
+    console.log('Starting handleSubmit...');
     try {
       const formData = new FormData();
       
-      // If we have a file (new upload or replaced image), crop and attach it
+      // If we have a file (new upload or replaced image), crop, remove background, and attach it
       if (newItem.file) {
-        const blob = await getCroppedImageBlob();
-        if (!blob) throw new Error("Failed to create image blob");
-        formData.append('image', blob, 'cropped.jpg');
+        console.log('Processing file:', newItem.file.name);
+        const croppedBlob = await getCroppedImageBlob();
+        if (!croppedBlob) throw new Error("Failed to create image blob");
+        
+        let finalBlob = croppedBlob;
+        
+        // Only run background removal if it hasn't been done manually (indicated by filename)
+        if (newItem.file.name !== 'processed.png') {
+          console.log('Running background removal...');
+          setIsRemovingBackground(true);
+          finalBlob = await removeBackground(croppedBlob);
+          setIsRemovingBackground(false);
+          console.log('Background removal complete.');
+        } else {
+          console.log('Skipping background removal (already processed).');
+        }
+        
+        formData.append('image', finalBlob, 'processed.png');
       }
 
       formData.append('name', newItem.name);
@@ -300,11 +375,14 @@ export default function Wardrobe() {
         color: '',
         file: null,
       });
+      setIsSaving(false);
+      setIsRemovingBackground(false);
       fetchItems();
     } catch (err) {
       console.error('Failed to add item:', err);
       alert(err instanceof Error ? err.message : "Failed to save piece. Please try again.");
       setIsSaving(false);
+      setIsRemovingBackground(false);
     }
   };
 
@@ -363,6 +441,8 @@ export default function Wardrobe() {
                     color: '',
                     file: null,
                   });
+                  setIsSaving(false);
+                  setIsRemovingBackground(false);
                   setShowModal(true);
                 }}
                 className="flex items-center justify-center gap-3 bg-foreground text-background px-8 py-3.5 font-black hover:opacity-90 transition-all shadow-xl uppercase tracking-[0.3em] text-[10px]"
@@ -398,7 +478,7 @@ export default function Wardrobe() {
         </div>
       </div>
 
-      <div className="max-w-[1800px] mx-auto px-8 lg:px-12 pt-28 pb-24">
+      <div className="max-w-[1800px] mx-auto px-8 lg:px-4 pt-4 pb-24">
         
         {/* ─── GRID ─────────────────────────── */}
         {loading ? (
@@ -453,7 +533,7 @@ export default function Wardrobe() {
           <div className="flex flex-col md:grid md:grid-cols-[1.1fr_1fr] h-[90vh] md:h-[85vh] min-h-[500px]">
             <div
               className={`relative border-r border-foreground/5 flex flex-col items-center justify-center transition-colors duration-500 overflow-hidden
-                ${newItem.imageUrl ? 'bg-zinc-950' : 'bg-alt'}
+                ${newItem.imageUrl ? 'bg-white' : 'bg-alt'}
                 ${dragActive ? 'bg-foreground/5' : ''}`}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
@@ -467,6 +547,17 @@ export default function Wardrobe() {
                         <div className="flex flex-col items-center gap-4">
                            <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
                            <span className="text-white font-mono text-[10px] uppercase tracking-widest font-black animate-pulse">AI Parsing Visual...</span>
+                        </div>
+                     </div>
+                   )}
+                   {isRemovingBackground && (
+                     <div className="absolute inset-0 z-[110] flex items-center justify-center bg-white/90 backdrop-blur-md">
+                        <div className="flex flex-col items-center gap-4 text-black">
+                           <div className="w-10 h-10 border-4 border-black/10 border-t-black rounded-full animate-spin"></div>
+                           <div className="text-center space-y-1">
+                             <p className="font-mono text-[11px] uppercase tracking-[0.3em] font-black">Refining Silhouette</p>
+                             <p className="font-mono text-[8px] uppercase tracking-[0.2em] opacity-40">Removing Background Archive...</p>
+                           </div>
                         </div>
                      </div>
                    )}
@@ -490,16 +581,34 @@ export default function Wardrobe() {
                         cursor: isDragging === 'move' ? 'grabbing' : 'grab'
                       }}
                     >
-                      <div onMouseDown={(e) => { e.stopPropagation(); handleMouseDown(e, 'tl'); }} className="absolute -top-1.5 -left-1.5 w-4 h-4 bg-white border-2 border-black cursor-nw-resize z-50"></div>
-                      <div onMouseDown={(e) => { e.stopPropagation(); handleMouseDown(e, 'br'); }} className="absolute -bottom-1.5 -right-1.5 w-4 h-4 bg-white border-2 border-black cursor-se-resize z-50"></div>
+                       <div onMouseDown={(e) => { e.stopPropagation(); handleMouseDown(e, 'tl'); }} className="absolute -top-3 -left-3 w-7 h-7 flex items-center justify-center cursor-nw-resize z-50 group/h">
+                         <div className="w-4 h-4 bg-white border-2 border-black group-hover/h:scale-110 transition-transform"></div>
+                       </div>
+                       <div onMouseDown={(e) => { e.stopPropagation(); handleMouseDown(e, 'br'); }} className="absolute -bottom-3 -right-3 w-7 h-7 flex items-center justify-center cursor-se-resize z-50 group/h">
+                         <div className="w-4 h-4 bg-white border-2 border-black group-hover/h:scale-110 transition-transform"></div>
+                       </div>
                       <div className="absolute top-2 left-2 flex items-center gap-2 pointer-events-none">
                         <span className="font-mono text-[8px] uppercase tracking-[0.3em] text-white font-black opacity-60">Unit_4:5</span>
                       </div>
                     </div>
                   </div>
-                  <button onClick={() => setNewItem({ ...newItem, imageUrl: '' })} className="absolute top-6 right-6 bg-black/50 backdrop-blur-xl p-2.5 hover:bg-white hover:text-black transition-all z-[60] border border-white/20">
-                    <X className="w-4 h-4 text-white" />
-                  </button>
+                  <div className="absolute top-6 right-6 flex flex-col gap-3 z-[60]">
+                    <button onClick={() => setNewItem({ ...newItem, imageUrl: '' })} className="bg-black/50 backdrop-blur-xl p-2.5 hover:bg-white hover:text-black transition-all border border-white/20">
+                      <X className="w-4 h-4 text-white" />
+                    </button>
+                    {newItem.imageUrl && !isRemovingBackground && (
+                      <button 
+                        type="button"
+                        onClick={handleManualBGRemoval}
+                        className="bg-black/50 backdrop-blur-xl p-2.5 hover:bg-white hover:text-black transition-all border border-white/20"
+                        title="Remove Background"
+                      >
+                         <div className="flex flex-col items-center gap-0.5">
+                           <span className="text-[8px] font-black uppercase text-white hover:text-black leading-none">Cut</span>
+                         </div>
+                      </button>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="text-center space-y-8 p-12">
@@ -591,7 +700,9 @@ export default function Wardrobe() {
                     </div>
                   </div>
                   <button type="submit" disabled={!newItem.name || (!newItem.imageUrl && !editItemId) || isSaving} className="w-full bg-foreground text-background py-4 text-[10px] uppercase tracking-[0.5em] font-black hover:opacity-90 transition-all disabled:opacity-20 disabled:cursor-not-allowed mt-6 shadow-xl">
-                    {isSaving ? (editItemId ? 'Saving...' : 'Archiving...') : (editItemId ? 'Save Changes' : 'Archive Piece')}
+                    {isRemovingBackground 
+                      ? 'Refining Visual...' 
+                      : (isSaving ? (editItemId ? 'Saving...' : 'Archiving...') : (editItemId ? 'Save Changes' : 'Archive Piece'))}
                   </button>
                 </form>
               </div>
@@ -606,7 +717,7 @@ export default function Wardrobe() {
           {selectedItem && (
             <div className="flex flex-col md:grid md:grid-cols-[0.85fr_1fr] h-[95vh] md:h-[80vh] min-h-[550px] w-full">
               {/* Left Side: Image Container (Narrower) */}
-              <div className="bg-zinc-950 flex flex-col items-center justify-center overflow-hidden border-b md:border-b-0 md:border-r border-foreground/5 h-[40vh] md:h-full">
+              <div className="bg-white flex flex-col items-center justify-center overflow-hidden border-b md:border-b-0 md:border-r border-foreground/5 h-[40vh] md:h-full">
                 <img 
                   src={selectedItem.imageUrl?.startsWith('/') 
                     ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${selectedItem.imageUrl}` 
@@ -689,6 +800,8 @@ export default function Wardrobe() {
                          : selectedItem.imageUrl;
                          
                        setSelectedItem(null);
+                       setIsSaving(false);
+                       setIsRemovingBackground(false);
                        setShowModal(true);
                      }}
                      className="flex-1 bg-foreground text-background py-5 px-8 text-[10px] lg:text-[11px] uppercase tracking-[0.2em] font-black hover:opacity-90 transition-all shadow-2xl whitespace-nowrap">
