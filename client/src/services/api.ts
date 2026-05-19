@@ -23,9 +23,9 @@ export const outfitService = {
   delete: (id: string) => api.delete(`/outfits/${id}`),
 };
 
-// ── Inspiration ───────────────────────────────────────────
+// ── Inspiration (Feed) ────────────────────────────────────
 export const inspirationService = {
-  getAll: (tag?: string) => api.get('/inspiration', { params: tag ? { tag } : {} }),
+  getAll: (tag?: string) => api.get('/feed', { params: tag ? { tag } : {} }),
 };
 
 // ── Marketplace ───────────────────────────────────────────
