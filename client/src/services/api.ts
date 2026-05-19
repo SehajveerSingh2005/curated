@@ -40,7 +40,7 @@ export const authService = {
   signup: (data: any) => api.post('/auth/signup', data),
 };
 
-// ── Interceptor ───────────────────────────────────────────
+// ── Interceptors ──────────────────────────────────────────
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   if (token) {
@@ -48,5 +48,19 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api;

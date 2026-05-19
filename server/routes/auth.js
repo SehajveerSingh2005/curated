@@ -21,7 +21,7 @@ router.post('/signup', async (req, res) => {
     await user.save();
 
     // Create JWT
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '30d' });
 
     res.status(201).json({
       token,
@@ -58,7 +58,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Create JWT
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '30d' });
 
     res.json({
       token,

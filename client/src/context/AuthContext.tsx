@@ -28,10 +28,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     if (storedUser && storedToken) {
       try {
-        setUser(JSON.parse(storedUser));
-        setToken(storedToken);
+        // Check token expiration
+        const payload = JSON.parse(atob(storedToken.split('.')[1]));
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
+          sessionStorage.removeItem('user');
+          sessionStorage.removeItem('token');
+          setUser(null);
+          setToken(null);
+        } else {
+          setUser(JSON.parse(storedUser));
+          setToken(storedToken);
+        }
       } catch (e) {
-        console.error('Failed to parse stored user', e);
+        console.error('Failed to parse stored user or token', e);
       }
     }
     setIsLoading(false);
