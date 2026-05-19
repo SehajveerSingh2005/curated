@@ -6,6 +6,7 @@ import { ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
 import editorialImg from '../assets/login.webp';
 
 export default function Login() {
+  const [imageLoaded, setImageLoaded] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
@@ -46,11 +47,20 @@ export default function Login() {
   return (
     <div className="h-screen grid lg:grid-cols-2 bg-background selection:bg-foreground selection:text-background overflow-hidden font-sans">
       {/* ─── IMAGE SIDE ─────────────────────────────────── */}
-      <div className="hidden lg:flex relative flex-col items-center justify-center overflow-hidden border-r border-foreground/5 bg-black">
+      <div className="hidden lg:flex relative flex-col items-center justify-center overflow-hidden border-r border-foreground/5 bg-muted">
+        {!imageLoaded && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-muted animate-pulse">
+            <Loader2 className="w-6 h-6 animate-spin text-foreground/20" />
+            <span className="font-mono text-[10px] uppercase tracking-[0.4em] text-foreground/30 font-black">Loading Asset...</span>
+          </div>
+        )}
         <img 
           src={editorialImg} 
           alt="Editorial" 
-          className="absolute inset-0 w-full h-full object-cover transition-all duration-[2000ms]"
+          onLoad={() => setImageLoaded(true)}
+          className={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 ease-out ${
+            imageLoaded ? 'opacity-100 scale-100 blur-none' : 'opacity-0 scale-105 blur-sm'
+          }`}
         />
       </div>
 
