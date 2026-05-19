@@ -33,6 +33,9 @@ export interface InspirationPost {
   tags: string[];
   title?: string;
   author?: string;
+  link?: string;
+  source?: string;
+  pubDate?: string;
 }
 
 export interface Product {
