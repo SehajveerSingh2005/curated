@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
 import Home from './pages/Home';
@@ -9,8 +9,14 @@ import Marketplace from './pages/Marketplace';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { preload } from '@imgly/background-removal';
 
 function App() {
+  useEffect(() => {
+    // Preload the 'isnet_quint8' (small) background removal model so it's ready instantly
+    preload({ model: 'isnet_quint8' }).catch(err => console.warn('Failed to preload BG removal model:', err));
+  }, []);
+
   return (
     <AuthProvider>
       <Router>

@@ -111,9 +111,9 @@ router.post('/generate', auth, async (req, res) => {
 You are a high-end fashion stylist. The user has the following wardrobe items:
 ${JSON.stringify(wardrobeData, null, 2)}
 
-Create 3 to 5 stylish, highly cohesive, minimal outfit combinations from these items. 
-Each outfit must make sense aesthetically (color blocking, textures, brand synergy).
-Do not just mix random items. An outfit generally needs at least a top and a bottom. It can also include outerwear, shoes, and accessories/hats. Make sure items in an outfit actually match.
+Create 1 stylish, highly cohesive, minimal outfit combination from these items. 
+The outfit must make sense aesthetically (color blocking, textures, brand synergy).
+Do not just mix random items. An outfit generally needs at least a top and a bottom. It can also include outerwear, shoes, and accessories/hats. Make sure items in the outfit actually match.
 Return ONLY JSON matching this exact schema:
 [
   {
@@ -132,13 +132,27 @@ IMPORTANT: "items" must be an array of the exact item IDs provided above.
       ],
       config: {
         responseMimeType: "application/json",
+        responseSchema: {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: {
+              name: { type: "STRING" },
+              occasion: { type: "STRING" },
+              items: {
+                type: "ARRAY",
+                items: { type: "STRING" }
+              }
+            },
+            required: ["name", "occasion", "items"]
+          }
+        }
       }
     });
 
     let jsonResult;
     try {
-      const cleaned = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
-      jsonResult = JSON.parse(cleaned);
+      jsonResult = JSON.parse(response.text);
     } catch (e) {
       return res.status(500).json({ msg: 'Failed to parse AI response' });
     }

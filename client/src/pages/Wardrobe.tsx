@@ -300,7 +300,7 @@ export default function Wardrobe() {
         blob = await response.blob();
       }
       
-      const processedBlob = await removeBackground(blob);
+      const processedBlob = await removeBackground(blob, { model: 'isnet_quint8' });
       const reader = new FileReader();
       reader.onloadend = () => {
         setNewItem(prev => ({ 
@@ -344,7 +344,7 @@ export default function Wardrobe() {
         if (newItem.file.name !== 'processed.png') {
           console.log('Running background removal...');
           setIsRemovingBackground(true);
-          finalBlob = await removeBackground(croppedBlob);
+          finalBlob = await removeBackground(croppedBlob, { model: 'isnet_quint8' });
           setIsRemovingBackground(false);
           console.log('Background removal complete.');
         } else {

@@ -230,9 +230,12 @@ export default function OutfitPage() {
               </div>
             ) : draftOutfit.items.length === 0 ? (
               <div className="text-center space-y-8">
-                 <div className="w-20 h-20 border border-foreground/10 mx-auto flex items-center justify-center rounded-full">
-                   <Plus className="w-6 h-6 text-foreground/30" />
-                 </div>
+                 <button 
+                   onClick={() => setShowSelector({ open: true, categoryFilter: null })}
+                   className="w-20 h-20 border border-foreground/20 hover:border-foreground hover:bg-foreground/5 transition-all mx-auto flex items-center justify-center rounded-full cursor-pointer group"
+                 >
+                   <Plus className="w-6 h-6 text-foreground/40 group-hover:text-foreground transition-colors group-hover:scale-110" />
+                 </button>
                  <div className="space-y-3">
                    <p className="font-mono text-[11px] uppercase tracking-[0.5em] text-foreground/80 font-black">Canvas Empty</p>
                    <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-foreground/40 max-w-[200px] mx-auto leading-loose">Hit Generate or add pieces manually to start composing.</p>
@@ -322,7 +325,7 @@ export default function OutfitPage() {
                
                <button 
                  onClick={() => setShowSelector({ open: true, categoryFilter: null })} 
-                 className="w-full py-6 border border-dashed border-foreground/20 text-[10px] uppercase tracking-[0.4em] font-black text-foreground/40 hover:text-foreground hover:border-foreground hover:bg-foreground/5 transition-all flex items-center justify-center gap-3 mt-8"
+                 className="w-full py-5 bg-foreground text-background text-[10px] uppercase tracking-[0.4em] font-black hover:opacity-90 transition-all flex items-center justify-center gap-3 mt-8 shadow-xl"
                >
                  <Plus className="w-4 h-4" /> Add Piece to Canvas
                </button>
