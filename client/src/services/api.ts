@@ -19,6 +19,7 @@ export const outfitService = {
   getAll: () => api.get('/outfits'),
   generate: () => api.post('/outfits/generate'),
   save: (data: any) => api.post('/outfits', data),
+  update: (id: string, data: any) => api.put(`/outfits/${id}`, data),
   delete: (id: string) => api.delete(`/outfits/${id}`),
 };
 

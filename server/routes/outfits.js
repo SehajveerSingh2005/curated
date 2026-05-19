@@ -42,6 +42,28 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
+// @route   PUT /api/outfits/:id
+// @desc    Update an outfit
+router.put('/:id', auth, async (req, res) => {
+  try {
+    const { name, items, occasion, tags } = req.body;
+    let outfit = await Outfit.findById(req.params.id);
+    if (!outfit) return res.status(404).json({ msg: 'Outfit not found' });
+    if (outfit.userId.toString() !== req.user.id) return res.status(401).json({ msg: 'Not authorized' });
+
+    outfit = await Outfit.findByIdAndUpdate(
+      req.params.id,
+      { $set: { name, items, occasion, tags } },
+      { new: true }
+    ).populate('items');
+
+    res.json(outfit);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
 // @route   DELETE /api/outfits/:id
 // @desc    Delete an outfit
 router.delete('/:id', auth, async (req, res) => {
