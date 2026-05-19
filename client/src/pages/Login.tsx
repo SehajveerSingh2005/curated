@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/api';
 import { ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
+import { AxiosError } from 'axios';
 import editorialImg from '../assets/login.webp';
 
 export default function Login() {
@@ -37,8 +38,12 @@ export default function Login() {
       const response = await authService.login({ email, password });
       login(response.data.user, response.data.token, remember);
       navigate('/');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Invalid credentials');
+    } catch (err: unknown) {
+      if (err instanceof AxiosError) {
+        setError(err.response?.data?.message || 'Invalid credentials');
+      } else {
+        setError('Invalid credentials');
+      }
     } finally {
       setLoading(false);
     }

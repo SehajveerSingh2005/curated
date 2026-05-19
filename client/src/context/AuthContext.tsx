@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 
 interface User {
   id: string;
@@ -17,36 +17,43 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Check localStorage first
+  const [user, setUser] = useState<User | null>(() => {
     const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
     const storedToken = localStorage.getItem('token') || sessionStorage.getItem('token');
-    
     if (storedUser && storedToken) {
       try {
-        // Check token expiration
         const payload = JSON.parse(atob(storedToken.split('.')[1]));
-        if (payload.exp && payload.exp * 1000 < Date.now()) {
-          localStorage.removeItem('user');
-          localStorage.removeItem('token');
-          sessionStorage.removeItem('user');
-          sessionStorage.removeItem('token');
-          setUser(null);
-          setToken(null);
-        } else {
-          setUser(JSON.parse(storedUser));
-          setToken(storedToken);
+        if (payload.exp && payload.exp * 1000 >= Date.now()) {
+          return JSON.parse(storedUser);
         }
       } catch (e) {
         console.error('Failed to parse stored user or token', e);
       }
     }
-    setIsLoading(false);
-  }, []);
+    return null;
+  });
+
+  const [token, setToken] = useState<string | null>(() => {
+    const storedToken = localStorage.getItem('token') || sessionStorage.getItem('token');
+    if (storedToken) {
+      try {
+        const payload = JSON.parse(atob(storedToken.split('.')[1]));
+        if (payload.exp && payload.exp * 1000 >= Date.now()) {
+          return storedToken;
+        } else {
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
+          sessionStorage.removeItem('user');
+          sessionStorage.removeItem('token');
+        }
+      } catch {
+        // Ignore
+      }
+    }
+    return null;
+  });
+
+  const [isLoading] = useState(false);
 
   const login = (userData: User, token: string, remember: boolean) => {
     setUser(userData);
@@ -73,6 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

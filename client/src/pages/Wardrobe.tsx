@@ -5,6 +5,7 @@ import type { WardrobeItem } from '../types';
 import WardrobeItemCard from '../components/ui/WardrobeItemCard';
 import { wardrobeService } from '../services/api';
 import { removeBackground } from '@imgly/background-removal';
+import { AxiosError } from 'axios';
 import {
   Dialog,
   DialogContent,
@@ -63,7 +64,7 @@ export default function Wardrobe() {
       width,
       height
     });
-  }, [imgAspect, newItem.imageUrl === '']); // Trigger on aspect change or when image is cleared/reset
+  }, [imgAspect, newItem.imageUrl]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -270,9 +271,14 @@ export default function Wardrobe() {
         color: details.color || prev.color,
         tags: details.tags && details.tags.length > 0 ? details.tags : prev.tags
       }));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('AI tagging failed:', err);
-      const errorMsg = err.response?.data?.msg || err.response?.data?.error || err.message;
+      let errorMsg = 'Unknown error';
+      if (err instanceof AxiosError) {
+        errorMsg = err.response?.data?.msg || err.response?.data?.error || err.message;
+      } else if (err instanceof Error) {
+        errorMsg = err.message;
+      }
       alert(`Failed to auto-tag image: ${errorMsg}`);
     } finally {
       setIsAnalyzing(false);

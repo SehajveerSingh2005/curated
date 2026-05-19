@@ -3,8 +3,7 @@ import { Sparkles, RefreshCw, X, Plus, CheckCircle2, Trash2 } from 'lucide-react
 import { outfitService, wardrobeService } from '../services/api';
 import type { WardrobeItem, Outfit } from '../types';
 import { Dialog, DialogContent } from '../components/ui/dialog';
-import { useNavigate } from 'react-router-dom';
-import OutfitCard from '../components/ui/OutfitCard';
+import { AxiosError } from 'axios';
 
 export default function OutfitPage() {
   const [wardrobeItems, setWardrobeItems] = useState<WardrobeItem[]>([]);
@@ -23,8 +22,6 @@ export default function OutfitPage() {
     open: false,
     categoryFilter: null
   });
-
-  const navigate = useNavigate();
 
   useEffect(() => {
     wardrobeService.getAll().then(res => setWardrobeItems(res.data)).catch(err => console.error(err));
@@ -53,8 +50,12 @@ export default function OutfitPage() {
           items: suggestion.items
         });
       }
-    } catch (err: any) {
-      setError(err.response?.data?.msg || 'Failed to synthesize looks.');
+    } catch (err: unknown) {
+      if (err instanceof AxiosError) {
+        setError(err.response?.data?.msg || 'Failed to synthesize looks.');
+      } else {
+        setError('Failed to synthesize looks.');
+      }
     } finally {
       setGenerating(false);
     }
@@ -83,8 +84,12 @@ export default function OutfitPage() {
       
       fetchOutfits();
       setView('archive');
-    } catch (err: any) {
-      setError(err.response?.data?.msg || 'Failed to save look.');
+    } catch (err: unknown) {
+      if (err instanceof AxiosError) {
+        setError(err.response?.data?.msg || 'Failed to save look.');
+      } else {
+        setError('Failed to save look.');
+      }
     } finally {
       setSaving(false);
     }
@@ -103,8 +108,8 @@ export default function OutfitPage() {
   const handleLoadToLab = (outfit: Outfit) => {
     setDraftOutfit({
       _id: outfit._id,
-      name: outfit.name,
-      occasion: outfit.occasion,
+      name: outfit.name || '',
+      occasion: outfit.occasion || '',
       items: outfit.items
     });
     setView('lab');

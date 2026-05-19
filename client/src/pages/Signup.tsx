@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/api';
 import { ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
+import { AxiosError } from 'axios';
 import editorialImg from '../assets/signup.jpg';
 
 export default function Signup() {
@@ -49,8 +50,12 @@ export default function Signup() {
       const response = await authService.signup({ username, email, password });
       login(response.data.user, response.data.token, true); // Auto-login and remember
       navigate('/');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create account');
+    } catch (err: unknown) {
+      if (err instanceof AxiosError) {
+        setError(err.response?.data?.message || 'Failed to create account');
+      } else {
+        setError('Failed to create account');
+      }
     } finally {
       setLoading(false);
     }

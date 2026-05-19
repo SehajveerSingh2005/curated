@@ -18,8 +18,8 @@ export const wardrobeService = {
 export const outfitService = {
   getAll: () => api.get('/outfits'),
   generate: () => api.post('/outfits/generate'),
-  save: (data: any) => api.post('/outfits', data),
-  update: (id: string, data: any) => api.put(`/outfits/${id}`, data),
+  save: (data: Record<string, unknown>) => api.post('/outfits', data),
+  update: (id: string, data: Record<string, unknown>) => api.put(`/outfits/${id}`, data),
   delete: (id: string) => api.delete(`/outfits/${id}`),
 };
 
@@ -37,8 +37,8 @@ export const marketplaceService = {
 
 // ── Auth ──────────────────────────────────────────────────
 export const authService = {
-  login: (data: any) => api.post('/auth/login', data),
-  signup: (data: any) => api.post('/auth/signup', data),
+  login: (data: Record<string, unknown>) => api.post('/auth/login', data),
+  signup: (data: Record<string, unknown>) => api.post('/auth/signup', data),
 };
 
 // ── Interceptors ──────────────────────────────────────────
