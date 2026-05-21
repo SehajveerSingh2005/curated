@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { InspirationPost } from '../types';
 import InspirationCard from '../components/ui/InspirationCard';
+import { Skeleton } from '../components/ui/skeleton';
 import { inspirationService } from '../services/api';
 
 export default function Inspiration() {
@@ -12,7 +13,7 @@ export default function Inspiration() {
   const [hasMore, setHasMore] = useState(true);
   const [activeTag, setActiveTag] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const observerTarget = useRef<HTMLDivElement>(null);
   const pageRef = useRef(1);
@@ -21,7 +22,9 @@ export default function Inspiration() {
     const handleScroll = () => {
       const offset = window.pageYOffset || document.documentElement.scrollTop;
       const progress = Math.min(1, offset / 100);
-      setScrollProgress(progress);
+      if (containerRef.current) {
+        containerRef.current.style.setProperty('--scroll-progress', progress.toString());
+      }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
@@ -105,20 +108,20 @@ export default function Inspiration() {
   });
 
   return (
-    <div className="min-h-[120vh] pt-24 bg-background text-foreground font-sans">
+    <div ref={containerRef} className="min-h-[120vh] pt-24 bg-background text-foreground font-sans">
       
       <div 
         className="sticky top-24 z-[45] bg-background/90 backdrop-blur-3xl border-b border-foreground/5 transition-all duration-300"
         style={{ 
-          paddingTop: `${Math.max(1, 2 - scrollProgress) * 16}px`,
-          paddingBottom: `${Math.max(1, 2 - scrollProgress) * 16}px`
-        }}
+          paddingTop: 'calc((2 - var(--scroll-progress, 0)) * 16px)',
+          paddingBottom: 'calc((2 - var(--scroll-progress, 0)) * 16px)'
+        } as React.CSSProperties}
       >
         <div className="max-w-[1800px] mx-auto px-8 lg:px-12 space-y-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="flex items-center gap-6">
               <div className="flex flex-col">
-                <div className="flex items-center gap-2 mb-0.5" style={{ opacity: 1 - scrollProgress * 0.4 }}>
+                <div className="flex items-center gap-2 mb-0.5" style={{ opacity: 'calc(1 - var(--scroll-progress, 0) * 0.4)' } as React.CSSProperties}>
                   <span className="font-mono text-[9px] uppercase tracking-[0.4em] text-foreground/50 font-black">
                     Unit_{filtered.length}
                   </span>
@@ -126,7 +129,7 @@ export default function Inspiration() {
                 </div>
                 <h1 
                   className="font-black uppercase tracking-tighter leading-none" 
-                  style={{ fontSize: `${Math.max(32, 72 - scrollProgress * 40)}px` }}
+                  style={{ fontSize: 'calc(72px - var(--scroll-progress, 0) * 40px)' } as React.CSSProperties}
                 >
                   Discover<span className="font-serif italic lowercase font-normal tracking-normal ml-0.5">.</span>
                 </h1>
@@ -152,9 +155,9 @@ export default function Inspiration() {
           <div 
             className="flex flex-wrap items-center gap-x-8 gap-y-4 border-t border-foreground/5 pt-4 transition-all duration-300"
             style={{ 
-              opacity: 1 - scrollProgress * 0.2,
-              transform: `translateY(${scrollProgress * -4}px)`
-            }}
+              opacity: 'calc(1 - var(--scroll-progress, 0) * 0.2)',
+              transform: 'translateY(calc(var(--scroll-progress, 0) * -4px))'
+            } as React.CSSProperties}
           >
             <div className="flex items-center gap-3 mr-4">
               <svg className="w-3.5 h-3.5 text-foreground/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -183,7 +186,7 @@ export default function Inspiration() {
 
       <div className="max-w-[1800px] mx-auto px-8 lg:px-12 pt-12 pb-24">
         <AnimatePresence mode="wait">
-          {loading ? (
+      {loading ? (
             <motion.div 
               key="skeleton"
               initial={{ opacity: 0 }}
@@ -192,10 +195,24 @@ export default function Inspiration() {
               className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6"
             >
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="mb-12 block animate-pulse">
-                  <div className="relative overflow-hidden mb-5 border border-foreground/5 bg-foreground/5 h-[400px] w-full" />
-                  <div className="h-4 bg-foreground/5 w-3/4 mb-4" />
-                  <div className="h-4 bg-foreground/5 w-1/2" />
+                <div key={i} className="mb-12 block break-inside-avoid">
+                  <Skeleton 
+                    className="relative overflow-hidden mb-5 border border-foreground/5 w-full"
+                    style={{ height: `${[320, 480, 360, 420, 300, 460, 380, 440][i % 8]}px` }}
+                  />
+                  <div className="flex flex-col px-1 pt-2">
+                    <div className="flex justify-between items-center gap-4 mb-4">
+                      <Skeleton className="h-3 w-20" />
+                      <Skeleton className="h-3 w-16" />
+                    </div>
+                    <Skeleton className="h-5 w-11/12 mb-2" />
+                    <Skeleton className="h-5 w-3/4 mb-5" />
+                    <div className="flex flex-wrap gap-2">
+                      <Skeleton className="h-3.5 w-10" />
+                      <Skeleton className="h-3.5 w-12" />
+                      <Skeleton className="h-3.5 w-8" />
+                    </div>
+                  </div>
                 </div>
               ))}
             </motion.div>
