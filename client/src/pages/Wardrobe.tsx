@@ -401,14 +401,20 @@ export default function Wardrobe() {
     >
       
       {/* ─── STICKY HEADER WRAPPER ──────────────── */}
-      <div className="sticky top-24 z-[45] bg-background/90 backdrop-blur-3xl border-b border-foreground/5 py-8">
+      <div 
+        className="sticky top-24 z-[45] bg-background/90 backdrop-blur-3xl border-b border-foreground/5 transition-all duration-300"
+        style={{ 
+          paddingTop: `${Math.max(1, 2 - scrollProgress) * 16}px`,
+          paddingBottom: `${Math.max(1, 2 - scrollProgress) * 16}px`
+        }}
+      >
         <div className="max-w-[1800px] mx-auto px-8 lg:px-12 space-y-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="flex items-center gap-6">
               <div className="flex flex-col">
                 <div className="flex items-center gap-2 mb-0.5" style={{ opacity: 1 - scrollProgress * 0.4 }}>
                   <span className="font-mono text-[9px] uppercase tracking-[0.4em] text-foreground/50 font-black">
-                    Unit_{items.length}
+                    Unit_{filtered.length}
                   </span>
                   <div className="h-[1px] w-6 bg-foreground/20"></div>
                 </div>
@@ -460,7 +466,13 @@ export default function Wardrobe() {
           </div>
 
           {/* Integrated Filter Row — Always visible */}
-          <div className="flex flex-wrap items-center gap-x-8 gap-y-4 border-t border-foreground/5 pt-4 transition-all duration-300">
+          <div 
+            className="flex flex-wrap items-center gap-x-8 gap-y-4 border-t border-foreground/5 pt-4 transition-all duration-300"
+            style={{ 
+              opacity: 1 - scrollProgress * 0.2,
+              transform: `translateY(${scrollProgress * -4}px)`
+            }}
+          >
              <div className="flex items-center gap-3 mr-4">
                <Filter className="w-3.5 h-3.5 text-foreground/50" />
                <span className="font-mono text-[9px] uppercase tracking-[0.4em] text-foreground/50 font-black">Section</span>
