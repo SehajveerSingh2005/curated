@@ -32,13 +32,36 @@ let cachedFeed = null;
 let lastFetchedTime = 0;
 const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
 
+const checkImageExists = async (url) => {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      },
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    
+    const isValid = response.ok;
+    if (response.body) {
+      await response.body.cancel().catch(() => {});
+    }
+    return isValid;
+  } catch (err) {
+    return false;
+  }
+};
+
 const fetchAndCacheFeeds = async () => {
   const allItems = [];
   
   const feedPromises = FEEDS.map(async (feed) => {
     try {
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout')), 2500)
+        setTimeout(() => reject(new Error('Timeout')), 8000)
       );
       
       const parsedData = await Promise.race([
@@ -79,8 +102,17 @@ const fetchAndCacheFeeds = async () => {
           if (match && !isAdUrl(match[1])) imageUrl = match[1];
         }
 
+        const categoryStrings = (item.categories || []).map(c => {
+          if (typeof c === 'string') return c;
+          if (c && typeof c === 'object') {
+            if (typeof c._ === 'string') return c._;
+            if (typeof c.name === 'string') return c.name;
+          }
+          return '';
+        }).filter(Boolean);
+
         // Strict fashion filter
-        const searchString = `${item.title || ''} ${item.contentSnippet || ''} ${(item.categories || []).join(' ')}`.toLowerCase();
+        const searchString = `${item.title || ''} ${item.contentSnippet || ''} ${categoryStrings.join(' ')}`.toLowerCase();
         const fashionKeywords = [
           'fashion', 'style', 'trend', 'outfit', 'wear', 'runway', 'designer', 'collection', 'wardrobe', 'dress', 
           'apparel', 'shoes', 'sneaker', 'lookbook', 'streetwear', 'garment', 'tailoring', 'couture', 'menswear', 'womenswear', 'vogue', 'gq',
@@ -92,7 +124,7 @@ const fetchAndCacheFeeds = async () => {
         // Must be fashion related and MUST have a valid native image
         if (!isFashionRelated || !imageUrl) return;
 
-        const tags = (item.categories || []).slice(0, 3).map(c => typeof c === 'string' ? c.toLowerCase() : '');
+        const tags = categoryStrings.slice(0, 3).map(c => c.toLowerCase());
         const filteredTags = tags.filter(t => t && fashionKeywords.some(kw => t.includes(kw))).slice(0, 3);
         
         if (filteredTags.length === 0) {
@@ -113,12 +145,47 @@ const fetchAndCacheFeeds = async () => {
     } catch (error) {
       console.error(`Error fetching feed ${feed.url}:`, error.message);
     }
-  });
+  });  await Promise.all(feedPromises);
 
-  await Promise.all(feedPromises);
+  // Filter out duplicate articles
+  const seenIds = new Set();
+  const uniqueItems = [];
+  for (const item of allItems) {
+    if (!item._id) continue;
+    if (!seenIds.has(item._id)) {
+      seenIds.add(item._id);
+      uniqueItems.push(item);
+    }
+  }
 
-  allItems.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
-  const finalItems = allItems.slice(0, 150);
+  // Sort unique items by publication date descending
+  uniqueItems.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+
+  // Batch validate image existence to get exactly 150 valid items
+  const finalItems = [];
+  const BATCH_SIZE = 25;
+  let index = 0;
+
+  while (finalItems.length < 150 && index < uniqueItems.length) {
+    const batch = uniqueItems.slice(index, index + BATCH_SIZE);
+    index += BATCH_SIZE;
+
+    const validationPromises = batch.map(async (item) => {
+      const isValid = await checkImageExists(item.imageUrl);
+      return isValid ? item : null;
+    });
+
+    const results = await Promise.all(validationPromises);
+
+    for (const item of results) {
+      if (item) {
+        finalItems.push(item);
+        if (finalItems.length >= 150) {
+          break;
+        }
+      }
+    }
+  }
   
   cachedFeed = finalItems;
   lastFetchedTime = Date.now();
