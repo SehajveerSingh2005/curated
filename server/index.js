@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth');
 const wardrobeRoutes = require('./routes/wardrobe');
 const outfitRoutes = require('./routes/outfits');
 const feedRoutes = require('./routes/feed');
+const marketplaceRoutes = require('./routes/marketplace');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -23,6 +24,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/wardrobe', wardrobeRoutes);
 app.use('/api/outfits', outfitRoutes);
 app.use('/api/feed', feedRoutes);
+app.use('/api/marketplace', marketplaceRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Curated API is running' });
