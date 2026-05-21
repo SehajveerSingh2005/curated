@@ -45,6 +45,19 @@ export interface Product {
   price: number;
   category: string;
   tags: string[];
-  seller?: string;
+  seller?: {
+    _id: string;
+    username: string;
+  };
+  buyer?: {
+    _id: string;
+    username: string;
+  };
   condition?: 'new' | 'like new' | 'good' | 'fair';
+  status?: 'available' | 'sold';
+  wardrobeItemId?: string;
+  createdAt?: string;
+  brand?: string;
+  fabric?: string;
+  color?: string;
 }
