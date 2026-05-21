@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { InspirationPost } from '../types';
 import InspirationCard from '../components/ui/InspirationCard';
@@ -6,105 +6,127 @@ import { inspirationService } from '../services/api';
 
 export default function Inspiration() {
   const [posts, setPosts] = useState<InspirationPost[]>([]);
+  const [tags, setTags] = useState<string[]>(['All']);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [activeTag, setActiveTag] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [scrollProgress, setScrollProgress] = useState(0);
 
-  const headerRef = useRef<HTMLDivElement>(null);
+  const observerTarget = useRef<HTMLDivElement>(null);
+  const pageRef = useRef(1);
 
   useEffect(() => {
     const handleScroll = () => {
       const offset = window.pageYOffset || document.documentElement.scrollTop;
       const progress = Math.min(1, offset / 100);
-      if (headerRef.current) {
-        headerRef.current.style.setProperty('--scroll-progress', progress.toString());
-      }
+      setScrollProgress(progress);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => {
-    const fetchFeed = async () => {
-      try {
+  const fetchFeed = useCallback(async (pageNum: number, tag: string, isInitial: boolean = false) => {
+    try {
+      if (isInitial) {
         setLoading(true);
-        const startTime = Date.now();
-        const { data } = await inspirationService.getAll();
-        
-        // Ensure skeleton UI is visible for at least 800ms for premium UX
-        const elapsed = Date.now() - startTime;
-        const delay = Math.max(0, 800 - elapsed);
-        if (delay > 0) {
-          await new Promise(resolve => setTimeout(resolve, delay));
-        }
-        
-        setPosts(data);
-      } catch (error) {
-        console.error('Error fetching feed:', error);
-      } finally {
-        setLoading(false);
+        pageRef.current = 1;
+      } else {
+        setLoadingMore(true);
       }
-    };
-    fetchFeed();
+
+      const { data } = await inspirationService.getAll({ 
+        page: pageNum, 
+        limit: 12, 
+        tag: tag.toLowerCase() === 'all' ? undefined : tag 
+      });
+      
+      const newPosts = data.data;
+      const pagination = data.pagination;
+      
+      if (data.tags) setTags(['All', ...data.tags]);
+
+      if (isInitial) {
+        setPosts(newPosts);
+      } else {
+        setPosts(prev => {
+          const existingIds = new Set(prev.map(p => p._id));
+          const uniqueNewPosts = newPosts.filter((p: InspirationPost) => !existingIds.has(p._id));
+          return [...prev, ...uniqueNewPosts];
+        });
+      }
+
+      setHasMore(pagination.hasMore);
+    } catch (error) {
+      console.error('Error fetching feed:', error);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
   }, []);
 
-  // Dynamically generate tags that have at least 10 items
-  const dynamicTags = ['All'];
-  const tagCounts: Record<string, number> = {};
-  
-  posts.forEach((post) => {
-    if (post.tags) {
-      post.tags.forEach((tag) => {
-        const lowerTag = tag.toLowerCase();
-        tagCounts[lowerTag] = (tagCounts[lowerTag] || 0) + 1;
-      });
-    }
-  });
+  // Effect for tag change
+  useEffect(() => {
+    fetchFeed(1, activeTag, true);
+  }, [activeTag, fetchFeed]);
 
-  Object.entries(tagCounts).forEach(([lowerTag, count]) => {
-    if (count >= 10) {
-      const formattedTag = lowerTag.charAt(0).toUpperCase() + lowerTag.slice(1);
-      if (!dynamicTags.map(t => t.toLowerCase()).includes(lowerTag) && formattedTag.trim() !== '') {
-        dynamicTags.push(formattedTag);
-      }
+  // Auto-fetch more if results are sparse
+  useEffect(() => {
+    if (!loading && !loadingMore && hasMore && posts.length > 0 && posts.length < 12) {
+      pageRef.current += 1;
+      fetchFeed(pageRef.current, activeTag);
     }
-  });
+  }, [posts.length, loading, loadingMore, hasMore, activeTag, fetchFeed]);
+
+  // Infinite Scroll Sentinel
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
+          pageRef.current += 1;
+          fetchFeed(pageRef.current, activeTag);
+        }
+      },
+      { threshold: 0.1, rootMargin: '800px' }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, loading, loadingMore, activeTag, fetchFeed]);
 
   const filtered = posts.filter((p) => {
-    const matchesTag = activeTag === 'All' || (p.tags && p.tags.some(t => t.toLowerCase() === activeTag.toLowerCase()));
     const searchString = `${p.title || ''} ${p.author || ''} ${p.source || ''} ${(p.tags || []).join(' ')}`.toLowerCase();
-    const matchesSearch = searchString.includes(searchQuery.toLowerCase());
-    return matchesTag && matchesSearch;
+    return searchString.includes(searchQuery.toLowerCase());
   });
 
   return (
     <div className="min-h-[120vh] pt-24 bg-background text-foreground font-sans">
       
-      {/* ─── STICKY HEADER WRAPPER ──────────────── */}
       <div 
-        ref={headerRef}
-        className="sticky top-24 z-[45] bg-background/90 backdrop-blur-3xl border-b border-foreground/5 py-8"
-        style={{ '--scroll-progress': '0' } as React.CSSProperties}
+        className="sticky top-24 z-[45] bg-background/90 backdrop-blur-3xl border-b border-foreground/5 transition-all duration-300"
+        style={{ 
+          paddingTop: `${Math.max(1, 2 - scrollProgress) * 16}px`,
+          paddingBottom: `${Math.max(1, 2 - scrollProgress) * 16}px`
+        }}
       >
-        <div className="max-w-[1800px] mx-auto px-8 lg:px-12 space-y-8">
+        <div className="max-w-[1800px] mx-auto px-8 lg:px-12 space-y-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="flex items-center gap-6">
               <div className="flex flex-col">
-                <div className="flex items-center gap-2 mb-0.5" style={{ opacity: 'calc(1 - var(--scroll-progress) * 0.4)' }}>
+                <div className="flex items-center gap-2 mb-0.5" style={{ opacity: 1 - scrollProgress * 0.4 }}>
                   <span className="font-mono text-[9px] uppercase tracking-[0.4em] text-foreground/50 font-black">
                     Unit_{filtered.length}
                   </span>
                   <div className="h-[1px] w-6 bg-foreground/20"></div>
                 </div>
                 <h1 
-                  className="font-black uppercase tracking-tighter leading-none transition-[font-size] duration-75" 
-                  style={{ 
-                    fontSize: 'calc(72px - var(--scroll-progress) * 40px)',
-                    minHeight: '72px',
-                    display: 'flex',
-                    alignItems: 'center'
-                  }}
+                  className="font-black uppercase tracking-tighter leading-none" 
+                  style={{ fontSize: `${Math.max(32, 72 - scrollProgress * 40)}px` }}
                 >
                   Discover<span className="font-serif italic lowercase font-normal tracking-normal ml-0.5">.</span>
                 </h1>
@@ -127,15 +149,20 @@ export default function Inspiration() {
             </div>
           </div>
 
-          {/* Integrated Filter Row — Always visible */}
-          <div className="flex flex-wrap items-center gap-x-8 gap-y-4 border-t border-foreground/5 pt-4 transition-all duration-300">
+          <div 
+            className="flex flex-wrap items-center gap-x-8 gap-y-4 border-t border-foreground/5 pt-4 transition-all duration-300"
+            style={{ 
+              opacity: 1 - scrollProgress * 0.2,
+              transform: `translateY(${scrollProgress * -4}px)`
+            }}
+          >
             <div className="flex items-center gap-3 mr-4">
               <svg className="w-3.5 h-3.5 text-foreground/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
               </svg>
               <span className="font-mono text-[9px] uppercase tracking-[0.4em] text-foreground/50 font-black">Section</span>
             </div>
-            {dynamicTags.map((tag) => (
+            {tags.map((tag) => (
               <button
                 key={tag}
                 onClick={() => setActiveTag(tag)}
@@ -146,7 +173,7 @@ export default function Inspiration() {
               >
                 {tag}
                 {activeTag.toLowerCase() === tag.toLowerCase() && (
-                  <div className="absolute bottom-0 left-0 w-full h-[1.5px] bg-foreground"></div>
+                  <div className="absolute bottom-0 left-0 w-full h-[1.5px] bg-foreground" />
                 )}
               </button>
             ))}
@@ -162,53 +189,59 @@ export default function Inspiration() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
               className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6"
             >
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="mb-12 block">
-                  <div className="relative overflow-hidden mb-5 border border-foreground/5 bg-foreground/5 h-[360px] w-full animate-pulse" />
-                  <div className="flex flex-col px-1 pt-2 space-y-4 animate-pulse">
-                    <div className="flex justify-between items-center">
-                      <div className="h-2 bg-foreground/10 rounded w-16" />
-                      <div className="h-2 bg-foreground/10 rounded w-20" />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="h-3 bg-foreground/10 rounded w-full" />
-                      <div className="h-3 bg-foreground/10 rounded w-5/6" />
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="h-2 bg-foreground/5 rounded w-12" />
-                      <div className="h-2 bg-foreground/5 rounded w-12" />
-                    </div>
-                  </div>
+                <div key={i} className="mb-12 block animate-pulse">
+                  <div className="relative overflow-hidden mb-5 border border-foreground/5 bg-foreground/5 h-[400px] w-full" />
+                  <div className="h-4 bg-foreground/5 w-3/4 mb-4" />
+                  <div className="h-4 bg-foreground/5 w-1/2" />
                 </div>
               ))}
             </motion.div>
           ) : filtered.length > 0 ? (
             <motion.div 
-              key="content"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              key={`${activeTag}-${searchQuery}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4 }}
               className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6"
             >
-              {filtered.map((post) => <InspirationCard key={post._id} post={post} />)}
+              {filtered.map((post) => (
+                <div key={post._id} className="break-inside-avoid">
+                  <InspirationCard post={post} />
+                </div>
+              ))}
             </motion.div>
-          ) : (
+          ) : !loadingMore && (
             <motion.div 
               key="empty"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="py-40 flex flex-col items-center justify-center text-center border border-dashed border-foreground/10"
             >
-              <h2 className="font-serif italic text-6xl text-foreground/20 mb-8 select-none">Empty Space</h2>
+              <h2 className="font-serif italic text-6xl text-foreground/20 mb-8">Empty Space</h2>
               <p className="font-mono text-[10px] uppercase tracking-[0.5em] text-foreground/50 font-black max-w-xs leading-loose">
                 No references match your current selection.
               </p>
             </motion.div>
           )}
         </AnimatePresence>
+
+        <div ref={observerTarget} className="h-40 w-full flex items-center justify-center mt-12">
+          {loadingMore && (
+            <div className="flex items-center gap-4">
+              <div className="w-2 h-2 bg-foreground/40 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+              <div className="w-2 h-2 bg-foreground/40 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+              <div className="w-2 h-2 bg-foreground/40 rounded-full animate-bounce"></div>
+            </div>
+          )}
+          {!hasMore && posts.length > 0 && !loading && (
+            <span className="font-mono text-[9px] uppercase tracking-[0.5em] text-foreground/20 font-black">
+              End of Transmission
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

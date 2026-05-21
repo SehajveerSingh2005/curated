@@ -34,7 +34,7 @@ export const outfitService = {
 
 // ── Inspiration (Feed) ────────────────────────────────────
 export const inspirationService = {
-  getAll: (tag?: string) => api.get('/feed', { params: tag ? { tag } : {} }),
+  getAll: (params?: { page?: number; limit?: number; tag?: string }) => api.get('/feed', { params }),
 };
 
 // ── Marketplace ───────────────────────────────────────────

@@ -23,51 +23,26 @@ const FEEDS = [
   { url: 'https://www.harpersbazaar.com/rss/all.xml/', source: 'Harper\'s Bazaar' },
   { url: 'https://www.whowhatwear.com/rss', source: 'Who What Wear' },
   { url: 'https://www.thezoereport.com/rss', source: 'The Zoe Report' },
-  { url: 'https://www.popsugar.com/fashion/feed', source: 'Popsugar' },
   { url: 'https://www.vogue.in/feed/rss', source: 'Vogue India' },
   { url: 'https://www.gqindia.com/feed/rss', source: 'GQ India' }
 ];
 
-let cachedFeed = null;
-let lastFetchedTime = 0;
-const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
+const FASHION_WHITELIST = [
+  'fashion', 'style', 'trend', 'outfit', 'wear', 'runway', 'designer', 'collection', 'wardrobe', 'dress', 
+  'apparel', 'shoes', 'sneaker', 'lookbook', 'streetwear', 'garment', 'tailoring', 'couture', 'menswear', 'womenswear',
+  'accessories', 'luxury', 'editorial', 'modeling', 'textiles', 'vogue', 'gq', 'hypebeast'
+];
 
-const checkImageExists = async (url) => {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2000);
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      },
-      signal: controller.signal
-    });
-    clearTimeout(timeout);
-    
-    const isValid = response.ok;
-    if (response.body) {
-      await response.body.cancel().catch(() => {});
-    }
-    return isValid;
-  } catch (err) {
-    return false;
-  }
-};
+let cachedFeed = [];
+let lastFetchedTime = 0;
+const CACHE_DURATION = 15 * 60 * 1000;
 
 const fetchAndCacheFeeds = async () => {
   const allItems = [];
   
   const feedPromises = FEEDS.map(async (feed) => {
     try {
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout')), 8000)
-      );
-      
-      const parsedData = await Promise.race([
-        parser.parseURL(feed.url),
-        timeoutPromise
-      ]);
+      const parsedData = await parser.parseURL(feed.url);
       
       parsedData.items.forEach(item => {
         let imageUrl = null;
@@ -91,7 +66,7 @@ const fetchAndCacheFeeds = async () => {
           }
         }
 
-        if (!imageUrl && item.enclosure && item.enclosure.url && !isAdUrl(item.enclosure.url) && item.enclosure.url.match(/\.(jpeg|jpg|gif|png|webp)/)) {
+        if (!imageUrl && item.enclosure && item.enclosure.url && !isAdUrl(item.enclosure.url)) {
           imageUrl = item.enclosure.url;
         }
 
@@ -102,6 +77,8 @@ const fetchAndCacheFeeds = async () => {
           if (match && !isAdUrl(match[1])) imageUrl = match[1];
         }
 
+        if (!imageUrl) return;
+
         const categoryStrings = (item.categories || []).map(c => {
           if (typeof c === 'string') return c;
           if (c && typeof c === 'object') {
@@ -111,25 +88,16 @@ const fetchAndCacheFeeds = async () => {
           return '';
         }).filter(Boolean);
 
-        // Strict fashion filter
         const searchString = `${item.title || ''} ${item.contentSnippet || ''} ${categoryStrings.join(' ')}`.toLowerCase();
-        const fashionKeywords = [
-          'fashion', 'style', 'trend', 'outfit', 'wear', 'runway', 'designer', 'collection', 'wardrobe', 'dress', 
-          'apparel', 'shoes', 'sneaker', 'lookbook', 'streetwear', 'garment', 'tailoring', 'couture', 'menswear', 'womenswear', 'vogue', 'gq',
-          'met gala', 'fashion week', 'red carpet', 'awards', 'exhibition', 'beauty'
-        ];
-        
-        const isFashionRelated = fashionKeywords.some(kw => searchString.includes(kw));
-        
-        // Must be fashion related and MUST have a valid native image
-        if (!isFashionRelated || !imageUrl) return;
+        const isFashionRelated = FASHION_WHITELIST.some(kw => searchString.includes(kw));
 
-        const tags = categoryStrings.slice(0, 3).map(c => c.toLowerCase());
-        const filteredTags = tags.filter(t => t && fashionKeywords.some(kw => t.includes(kw))).slice(0, 3);
-        
-        if (filteredTags.length === 0) {
-          filteredTags.push('editorial', 'trends');
-        }
+        if (!isFashionRelated) return;
+
+        // Filter tags against whitelist
+        const tags = categoryStrings
+          .map(c => c.toLowerCase())
+          .filter(t => FASHION_WHITELIST.some(kw => t.includes(kw)))
+          .filter(t => t.length > 2 && t.length < 20);
         
         allItems.push({
           _id: item.guid || item.link || Math.random().toString(),
@@ -139,82 +107,85 @@ const fetchAndCacheFeeds = async () => {
           pubDate: item.pubDate || new Date().toISOString(),
           author: item.creator || feed.source,
           source: feed.source,
-          tags: filteredTags,
+          tags: tags.length > 0 ? tags.slice(0, 3) : ['editorial'],
         });
       });
     } catch (error) {
       console.error(`Error fetching feed ${feed.url}:`, error.message);
     }
-  });  await Promise.all(feedPromises);
+  });
 
-  // Filter out duplicate articles
+  await Promise.all(feedPromises);
+
   const seenIds = new Set();
-  const uniqueItems = [];
-  for (const item of allItems) {
-    if (!item._id) continue;
-    if (!seenIds.has(item._id)) {
-      seenIds.add(item._id);
-      uniqueItems.push(item);
-    }
-  }
+  const uniqueItems = allItems.filter(item => {
+    if (seenIds.has(item._id)) return false;
+    seenIds.add(item._id);
+    return true;
+  }).sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
 
-  // Sort unique items by publication date descending
-  uniqueItems.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
-
-  // Batch validate image existence to get exactly 150 valid items
-  const finalItems = [];
-  const BATCH_SIZE = 25;
-  let index = 0;
-
-  while (finalItems.length < 150 && index < uniqueItems.length) {
-    const batch = uniqueItems.slice(index, index + BATCH_SIZE);
-    index += BATCH_SIZE;
-
-    const validationPromises = batch.map(async (item) => {
-      const isValid = await checkImageExists(item.imageUrl);
-      return isValid ? item : null;
-    });
-
-    const results = await Promise.all(validationPromises);
-
-    for (const item of results) {
-      if (item) {
-        finalItems.push(item);
-        if (finalItems.length >= 150) {
-          break;
-        }
-      }
-    }
-  }
-  
-  cachedFeed = finalItems;
+  cachedFeed = uniqueItems;
   lastFetchedTime = Date.now();
-  return finalItems;
+  return uniqueItems;
 };
 
-// Initial background fetch on server boot
+// Initial boot fetch
 fetchAndCacheFeeds().catch(err => console.error("Initial background fetch failed:", err.message));
 
 router.get('/', async (req, res) => {
   try {
     const now = Date.now();
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const tagFilter = req.query.tag ? req.query.tag.toLowerCase() : null;
     
-    // 1. If cache is fresh, return immediately
-    if (cachedFeed && (now - lastFetchedTime < CACHE_DURATION)) {
-      return res.json(cachedFeed);
+    // Serve from cache if available
+    if (cachedFeed.length === 0 || (now - lastFetchedTime > CACHE_DURATION)) {
+      const fetchPromise = fetchAndCacheFeeds();
+      if (cachedFeed.length === 0) {
+        await fetchPromise;
+      }
     }
-    
-    // 2. If cache is stale but exists, return immediately and update in background
-    if (cachedFeed) {
-      fetchAndCacheFeeds().catch(err => console.error("Background feed revalidation failed:", err.message));
-      return res.json(cachedFeed);
+
+    // Extract common tags from the ENTIRE cache for stable filtering
+    const tagCounts = {};
+    cachedFeed.forEach(item => {
+      item.tags.forEach(t => {
+        tagCounts[t] = (tagCounts[t] || 0) + 1;
+      });
+    });
+
+    const commonTags = Object.entries(tagCounts)
+      .filter(([_, count]) => count >= 3)
+      .sort((a, b) => b[1] - a[1])
+      .map(([tag]) => tag.charAt(0).toUpperCase() + tag.slice(1))
+      .slice(0, 20);
+
+    // Apply filtering
+    let filteredItems = cachedFeed;
+    if (tagFilter && tagFilter !== 'all') {
+      filteredItems = cachedFeed.filter(item => 
+        item.tags.some(t => t.toLowerCase() === tagFilter)
+      );
     }
-    
-    // 3. First request fallback: fetch synchronously
-    const data = await fetchAndCacheFeeds();
-    res.json(data);
+
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const items = filteredItems.slice(startIndex, endIndex);
+
+    res.json({
+      data: items,
+      tags: commonTags,
+      pagination: {
+        total: filteredItems.length,
+        page,
+        limit,
+        pages: Math.ceil(filteredItems.length / limit),
+        hasMore: endIndex < filteredItems.length
+      }
+    });
   } catch (error) {
-    console.error('Error fetching RSS feeds:', error);
+    console.error('Error in feed route:', error);
     res.status(500).json({ message: 'Error fetching discover feed' });
   }
 });
