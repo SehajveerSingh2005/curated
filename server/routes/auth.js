@@ -10,10 +10,16 @@ router.post('/signup', async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
-    // Check if user already exists
+    // Check if user already exists by email
     let user = await User.findOne({ email });
     if (user) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(400).json({ message: 'Email is already registered' });
+    }
+
+    // Check if user already exists by username
+    let userByUsername = await User.findOne({ username });
+    if (userByUsername) {
+      return res.status(400).json({ message: 'Username is already taken' });
     }
 
     // Create new user
@@ -34,6 +40,11 @@ router.post('/signup', async (req, res) => {
   } catch (err) {
     if (err.name === 'ValidationError') {
       return res.status(400).json({ message: Object.values(err.errors).map(val => val.message).join(', ') });
+    }
+    if (err.code === 11000) {
+      const field = err.keyValue ? Object.keys(err.keyValue)[0] : 'field';
+      const capitalizedField = field.charAt(0).toUpperCase() + field.slice(1);
+      return res.status(400).json({ message: `${capitalizedField} already exists` });
     }
     console.error(err.message);
     res.status(500).send('Server Error');

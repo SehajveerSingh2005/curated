@@ -79,8 +79,17 @@ const fetchAndCacheFeeds = async () => {
           if (match && !isAdUrl(match[1])) imageUrl = match[1];
         }
 
+        const categoryStrings = (item.categories || []).map(c => {
+          if (typeof c === 'string') return c;
+          if (c && typeof c === 'object') {
+            if (typeof c._ === 'string') return c._;
+            if (typeof c.name === 'string') return c.name;
+          }
+          return '';
+        }).filter(Boolean);
+
         // Strict fashion filter
-        const searchString = `${item.title || ''} ${item.contentSnippet || ''} ${(item.categories || []).join(' ')}`.toLowerCase();
+        const searchString = `${item.title || ''} ${item.contentSnippet || ''} ${categoryStrings.join(' ')}`.toLowerCase();
         const fashionKeywords = [
           'fashion', 'style', 'trend', 'outfit', 'wear', 'runway', 'designer', 'collection', 'wardrobe', 'dress', 
           'apparel', 'shoes', 'sneaker', 'lookbook', 'streetwear', 'garment', 'tailoring', 'couture', 'menswear', 'womenswear', 'vogue', 'gq',
@@ -92,7 +101,7 @@ const fetchAndCacheFeeds = async () => {
         // Must be fashion related and MUST have a valid native image
         if (!isFashionRelated || !imageUrl) return;
 
-        const tags = (item.categories || []).slice(0, 3).map(c => typeof c === 'string' ? c.toLowerCase() : '');
+        const tags = categoryStrings.slice(0, 3).map(c => c.toLowerCase());
         const filteredTags = tags.filter(t => t && fashionKeywords.some(kw => t.includes(kw))).slice(0, 3);
         
         if (filteredTags.length === 0) {
