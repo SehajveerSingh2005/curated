@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Plus, X, Search, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { WardrobeItem } from '../types';
@@ -72,7 +72,7 @@ export default function Wardrobe() {
   const [isDragging, setIsDragging] = useState<string | null>(null);
   const [startPos, setStartPos] = useState({ x: 0, y: 0, top: 0, left: 0, width: 0, height: 0 });
   const [imgAspect, setImgAspect] = useState(1);
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Sync crop box to 4:5 ratio when image aspect changes
   useEffect(() => {
@@ -101,9 +101,10 @@ export default function Wardrobe() {
   useEffect(() => {
     const handleScroll = () => {
       const offset = window.pageYOffset || document.documentElement.scrollTop;
-      // Progress over 100px for a "quicker" snap
       const progress = Math.min(1, offset / 100);
-      setScrollProgress(progress);
+      if (containerRef.current) {
+        containerRef.current.style.setProperty('--scroll-progress', progress.toString());
+      }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
@@ -429,6 +430,7 @@ export default function Wardrobe() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+      ref={containerRef}
       className="min-h-[120vh] pt-24 bg-background text-foreground selection:bg-foreground selection:text-background font-sans"
     >
       
@@ -436,15 +438,15 @@ export default function Wardrobe() {
       <div 
         className="sticky top-24 z-[45] bg-background/90 backdrop-blur-3xl border-b border-foreground/5 transition-all duration-300"
         style={{ 
-          paddingTop: `${Math.max(1, 2 - scrollProgress) * 16}px`,
-          paddingBottom: `${Math.max(1, 2 - scrollProgress) * 16}px`
-        }}
+          paddingTop: 'calc((2 - var(--scroll-progress, 0)) * 16px)',
+          paddingBottom: 'calc((2 - var(--scroll-progress, 0)) * 16px)'
+        } as React.CSSProperties}
       >
         <div className="max-w-[1800px] mx-auto px-8 lg:px-12 space-y-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="flex items-center gap-6">
               <div className="flex flex-col">
-                <div className="flex items-center gap-2 mb-0.5" style={{ opacity: 1 - scrollProgress * 0.4 }}>
+                <div className="flex items-center gap-2 mb-0.5" style={{ opacity: 'calc(1 - var(--scroll-progress, 0) * 0.4)' } as React.CSSProperties}>
                   <span className="font-mono text-[9px] uppercase tracking-[0.4em] text-foreground/50 font-black">
                     Unit_{filtered.length}
                   </span>
@@ -453,8 +455,8 @@ export default function Wardrobe() {
                 <h1 
                   className="font-black uppercase tracking-tighter leading-none"
                   style={{ 
-                    fontSize: `${Math.max(32, 72 - scrollProgress * 40)}px`,
-                  }}
+                    fontSize: 'calc(72px - var(--scroll-progress, 0) * 40px)',
+                  } as React.CSSProperties}
                 >
                   Wardrobe<span className="font-serif italic lowercase font-normal tracking-normal ml-0.5">.</span>
                 </h1>
@@ -501,9 +503,9 @@ export default function Wardrobe() {
           <div 
             className="flex flex-wrap items-center gap-x-8 gap-y-4 border-t border-foreground/5 pt-4 transition-all duration-300"
             style={{ 
-              opacity: 1 - scrollProgress * 0.2,
-              transform: `translateY(${scrollProgress * -4}px)`
-            }}
+              opacity: 'calc(1 - var(--scroll-progress, 0) * 0.2)',
+              transform: 'translateY(calc(var(--scroll-progress, 0) * -4px))'
+            } as React.CSSProperties}
           >
              <div className="flex items-center gap-3 mr-4">
                <Filter className="w-3.5 h-3.5 text-foreground/50" />
