@@ -73,9 +73,30 @@ export default function Marketplace() {
   const [isRemovingBackground, setIsRemovingBackground] = useState(false);
   const [isBuying, setIsBuying] = useState(false);
 
+  // Edit listing state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    price: '',
+    category: 'shirt',
+    brand: '',
+    fabric: '',
+    color: '',
+    condition: 'good' as 'new' | 'like new' | 'good' | 'fair',
+    tags: [] as string[],
+  });
+  const [editTagInput, setEditTagInput] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
+
   useEffect(() => {
     fetchProducts();
   }, [activeCat, activeSort]);
+
+  useEffect(() => {
+    if (!user) {
+      setListingOwnerFilter('others');
+    }
+  }, [user]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -434,6 +455,75 @@ export default function Marketplace() {
     setNewItem({ ...newItem, tags: newItem.tags.filter(t => t !== tag) });
   };
 
+  // Edit Product Actions
+  const startEditingProduct = () => {
+    if (!selectedProduct) return;
+    setEditForm({
+      name: selectedProduct.name,
+      price: selectedProduct.price.toString(),
+      category: selectedProduct.category,
+      brand: selectedProduct.brand || '',
+      fabric: selectedProduct.fabric || '',
+      color: selectedProduct.color || '',
+      condition: selectedProduct.condition || 'good',
+      tags: selectedProduct.tags || [],
+    });
+    setEditTagInput('');
+    setIsEditing(true);
+  };
+
+  const handleUpdateProductSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProduct) return;
+    if (!editForm.name || !editForm.price) {
+      alert("Name and Price are required.");
+      return;
+    }
+    
+    setIsUpdating(true);
+    try {
+      const updatedData = {
+        name: editForm.name,
+        price: Number(editForm.price),
+        category: editForm.category,
+        brand: editForm.brand,
+        fabric: editForm.fabric,
+        color: editForm.color,
+        condition: editForm.condition,
+        tags: editForm.tags,
+      };
+
+      const res = await marketplaceService.updateListing(selectedProduct._id, updatedData);
+      
+      // Update local states
+      setSelectedProduct(res.data);
+      setIsEditing(false);
+      
+      // Re-fetch listing data
+      fetchProducts();
+      alert("Listing details updated successfully!");
+    } catch (err: any) {
+      console.error('Failed to update listing:', err);
+      alert(err.response?.data?.msg || 'Failed to update listing.');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const addEditTag = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && editTagInput.trim()) {
+      e.preventDefault();
+      if (!editForm.tags.includes(editTagInput.trim())) {
+        setEditForm(prev => ({ ...prev, tags: [...prev.tags, editTagInput.trim()] }));
+      }
+      setEditTagInput('');
+    }
+  };
+
+  const removeEditTag = (tag: string) => {
+    setEditForm(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tag) }));
+  };
+
   // Buy Product Action
   const handleBuyProduct = async () => {
     if (!selectedProduct) return;
@@ -476,7 +566,13 @@ export default function Marketplace() {
   });
 
   return (
-    <div ref={containerRef} className="min-h-[120vh] pt-24 bg-background text-foreground font-sans selection:bg-foreground selection:text-background">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+      ref={containerRef} 
+      className="min-h-[120vh] pt-24 bg-background text-foreground font-sans selection:bg-foreground selection:text-background"
+    >
 
       {/* Sticky Header */}
       <div 
@@ -1042,7 +1138,7 @@ export default function Marketplace() {
       </Dialog>
 
       {/* ─── PRODUCT DETAILS MODAL ─── */}
-      <Dialog open={!!selectedProduct} onOpenChange={() => { setSelectedProduct(null); setPurchaseSuccess(false); }}>
+      <Dialog open={!!selectedProduct} onOpenChange={() => { setSelectedProduct(null); setPurchaseSuccess(false); setIsEditing(false); }}>
         <DialogContent className="w-[85vw] sm:max-w-[90vw] lg:max-w-6xl p-0 gap-0 border-none bg-background rounded-none overflow-hidden shadow-2xl scale-100">
           {selectedProduct && (
             <div className="flex flex-col md:grid md:grid-cols-[0.85fr_1fr] h-[95vh] md:h-[80vh] min-h-[550px] w-full">
@@ -1076,100 +1172,233 @@ export default function Marketplace() {
                 </AnimatePresence>
               </div>
 
-              {/* Right Side: Details */}
+              {/* Right Side: Details / Edit Form */}
               <div className="p-8 lg:p-14 xl:p-20 flex flex-col justify-between overflow-y-auto bg-background">
-                <div className="space-y-10 lg:space-y-12">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="font-mono text-[9px] uppercase tracking-[0.6em] text-foreground/50 font-black">
-                        EXCHANGE UNIT // {selectedProduct._id.slice(-6).toUpperCase()}
-                      </span>
-                      {selectedProduct.status === 'sold' && (
-                        <span className="bg-red-500/10 text-red-500 border border-red-500/20 px-3 py-1.5 text-[8.5px] uppercase tracking-widest font-black">
-                          {user && selectedProduct.buyer?._id === user.id ? '✓ Bought by You' : 'Sold'}
-                        </span>
+                {isEditing ? (
+                  <form onSubmit={handleUpdateProductSubmit} className="space-y-8 flex-1 flex flex-col justify-between">
+                    <div className="space-y-8">
+                      <div className="flex items-center justify-between border-b border-foreground/5 pb-4">
+                        <span className="font-mono text-[9px] uppercase tracking-[0.5em] text-foreground/50 font-black">EDIT LISTING DETAILS</span>
+                        <button 
+                          type="button" 
+                          onClick={() => setIsEditing(false)}
+                          className="text-[9px] uppercase tracking-[0.25em] font-black border border-foreground/10 px-3 py-1.5 hover:bg-foreground hover:text-background transition-all"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+
+                      <div className="space-y-1.5 focus-within:text-foreground text-foreground/60 transition-colors">
+                        <label className="font-mono text-[9.5px] uppercase tracking-[0.5em] font-black">Designation</label>
+                        <input 
+                          required 
+                          placeholder="PRODUCT NAME" 
+                          className="w-full bg-transparent border-b border-foreground/15 py-2.5 text-[11px] uppercase tracking-[0.2em] font-black focus:outline-none focus:border-foreground transition-all" 
+                          value={editForm.name} 
+                          onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} 
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-1.5 focus-within:text-foreground text-foreground/60 transition-colors">
+                          <label className="font-mono text-[9.5px] uppercase tracking-[0.5em] font-black">Price ($)</label>
+                          <input 
+                            required 
+                            type="number" 
+                            placeholder="0" 
+                            className="w-full bg-transparent border-b border-foreground/15 py-2.5 text-[11px] font-black focus:outline-none focus:border-foreground transition-all" 
+                            value={editForm.price} 
+                            onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} 
+                          />
+                        </div>
+                        <div className="space-y-1.5 focus-within:text-foreground text-foreground/60 transition-colors">
+                          <label className="font-mono text-[9.5px] uppercase tracking-[0.5em] font-black">Condition</label>
+                          <select 
+                            className="w-full bg-transparent border-b border-foreground/15 py-2.5 text-[10px] font-black uppercase tracking-wider focus:outline-none focus:border-foreground transition-all" 
+                            value={editForm.condition} 
+                            onChange={(e) => setEditForm({ ...editForm, condition: e.target.value as any })}
+                          >
+                            <option value="new">New</option>
+                            <option value="like new">Like New</option>
+                            <option value="good">Good</option>
+                            <option value="fair">Fair</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-1.5 focus-within:text-foreground text-foreground/60 transition-colors">
+                          <label className="font-mono text-[9.5px] uppercase tracking-[0.5em] font-black">Brand</label>
+                          <input 
+                            placeholder="LABEL" 
+                            className="w-full bg-transparent border-b border-foreground/15 py-2.5 text-[11px] uppercase tracking-[0.2em] font-black focus:outline-none focus:border-foreground transition-all" 
+                            value={editForm.brand} 
+                            onChange={(e) => setEditForm({ ...editForm, brand: e.target.value })} 
+                          />
+                        </div>
+                        <div className="space-y-1.5 focus-within:text-foreground text-foreground/60 transition-colors">
+                          <label className="font-mono text-[9.5px] uppercase tracking-[0.5em] font-black">Fabric</label>
+                          <input 
+                            placeholder="MATERIAL" 
+                            className="w-full bg-transparent border-b border-foreground/15 py-2.5 text-[11px] uppercase tracking-[0.2em] font-black focus:outline-none focus:border-foreground transition-all" 
+                            value={editForm.fabric} 
+                            onChange={(e) => setEditForm({ ...editForm, fabric: e.target.value })} 
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-1.5 focus-within:text-foreground text-foreground/60 transition-colors">
+                          <label className="font-mono text-[9.5px] uppercase tracking-[0.5em] font-black">Color</label>
+                          <input 
+                            placeholder="PALETTE" 
+                            className="w-full bg-transparent border-b border-foreground/15 py-2.5 text-[11px] uppercase tracking-[0.2em] font-black focus:outline-none focus:border-foreground transition-all" 
+                            value={editForm.color} 
+                            onChange={(e) => setEditForm({ ...editForm, color: e.target.value })} 
+                          />
+                        </div>
+                        <div className="space-y-1.5 focus-within:text-foreground text-foreground/60 transition-colors">
+                          <label className="font-mono text-[9.5px] uppercase tracking-[0.5em] text-foreground/60 font-black">Category</label>
+                          <select 
+                            className="w-full bg-transparent border-b border-foreground/15 py-2.5 text-[10px] font-black uppercase tracking-wider focus:outline-none focus:border-foreground transition-all" 
+                            value={editForm.category} 
+                            onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                          >
+                            {CATEGORIES.map(c => (
+                              <option key={c} value={c}>{c}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5 focus-within:text-foreground text-foreground/60 transition-colors">
+                        <label className="font-mono text-[9.5px] uppercase tracking-[0.5em] font-black">Style Tags</label>
+                        <input 
+                          placeholder="PRESS ENTER TO ADD TAG" 
+                          className="w-full bg-transparent border-b border-foreground/15 py-2.5 text-[11px] uppercase tracking-[0.2em] font-black focus:outline-none focus:border-foreground transition-all" 
+                          value={editTagInput} 
+                          onChange={(e) => setEditTagInput(e.target.value)} 
+                          onKeyDown={addEditTag} 
+                        />
+                        <div className="flex flex-wrap gap-1.5 pt-2">
+                          {editForm.tags.map(tag => (
+                            <span key={tag} className="flex items-center gap-1.5 bg-foreground/5 px-2.5 py-1.5 text-[9px] uppercase tracking-widest font-black">
+                              {tag}
+                              <button type="button" onClick={() => removeEditTag(tag)}>
+                                <X className="w-3 h-3 hover:text-red-500 transition-colors" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-12 mt-auto">
+                      <button 
+                        type="submit" 
+                        disabled={isUpdating}
+                        className="w-full bg-foreground text-background py-5 text-[10px] lg:text-[11px] uppercase tracking-[0.4em] font-black hover:opacity-90 transition-all shadow-xl"
+                      >
+                        {isUpdating ? 'Saving Changes...' : 'Save Changes'}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <div className="space-y-10 lg:space-y-12">
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <span className="font-mono text-[9px] uppercase tracking-[0.6em] text-foreground/50 font-black">
+                            EXCHANGE UNIT // {selectedProduct._id.slice(-6).toUpperCase()}
+                          </span>
+                          {selectedProduct.status === 'sold' && (
+                            <span className="bg-red-500/10 text-red-500 border border-red-500/20 px-3 py-1.5 text-[8.5px] uppercase tracking-widest font-black">
+                              {user && selectedProduct.buyer?._id === user.id ? '✓ Bought by You' : 'Sold'}
+                            </span>
+                          )}
+                        </div>
+                        <h2 className="font-sans font-black text-4xl lg:text-5xl xl:text-6xl uppercase tracking-[-0.03em] leading-[0.8]">{selectedProduct.name}</h2>
+                        <p className="text-2xl lg:text-3xl font-black font-mono tracking-tight">${selectedProduct.price}</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-y-8 gap-x-12">
+                        <div className="space-y-2">
+                          <label className="font-mono text-[9px] uppercase tracking-[0.5em] text-foreground/50 font-black block">Seller</label>
+                          <p className="text-[13px] lg:text-[14px] uppercase tracking-[0.2em] font-black break-words">{selectedProduct.seller?.username || '—'}</p>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="font-mono text-[9px] uppercase tracking-[0.5em] text-foreground/50 font-black block">Condition</label>
+                          <p className="text-[13px] lg:text-[14px] uppercase tracking-[0.2em] font-black break-words">{selectedProduct.condition}</p>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="font-mono text-[9px] uppercase tracking-[0.5em] text-foreground/50 font-black block">Category</label>
+                          <p className="text-[13px] lg:text-[14px] uppercase tracking-[0.2em] font-black break-words">{selectedProduct.category}</p>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="font-mono text-[9px] uppercase tracking-[0.5em] text-foreground/50 font-black block">Brand</label>
+                          <p className="text-[13px] lg:text-[14px] uppercase tracking-[0.2em] font-black break-words">{selectedProduct.brand || '—'}</p>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="font-mono text-[9px] uppercase tracking-[0.5em] text-foreground/50 font-black block">Fabric</label>
+                          <p className="text-[13px] lg:text-[14px] uppercase tracking-[0.2em] font-black break-words">{selectedProduct.fabric || '—'}</p>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="font-mono text-[9px] uppercase tracking-[0.5em] text-foreground/50 font-black block">Color</label>
+                          <p className="text-[13px] lg:text-[14px] uppercase tracking-[0.2em] font-black break-words">{selectedProduct.color || '—'}</p>
+                        </div>
+                      </div>
+
+                      {selectedProduct.tags && selectedProduct.tags.length > 0 && (
+                        <div className="space-y-5">
+                          <div className="flex items-center gap-2">
+                            <label className="font-mono text-[9px] uppercase tracking-[0.5em] text-foreground/50 font-black block">Style Tags</label>
+                            <span className="font-mono text-[8px] uppercase tracking-widest text-foreground/45 flex items-center gap-1 font-black">
+                              <span>✨</span> AI Tagged
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedProduct.tags.map(tag => (
+                              <span key={tag} className="bg-foreground/5 px-4 py-2 text-[9px] lg:text-[10px] uppercase tracking-widest font-black text-foreground/70 border border-foreground/5">#{tag}</span>
+                            ))}
+                          </div>
+                        </div>
                       )}
                     </div>
-                    <h2 className="font-sans font-black text-4xl lg:text-5xl xl:text-6xl uppercase tracking-[-0.03em] leading-[0.8]">{selectedProduct.name}</h2>
-                    <p className="text-2xl lg:text-3xl font-black font-mono tracking-tight">${selectedProduct.price}</p>
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-y-8 gap-x-12">
-                    <div className="space-y-2">
-                      <label className="font-mono text-[9px] uppercase tracking-[0.5em] text-foreground/50 font-black block">Seller</label>
-                      <p className="text-[13px] lg:text-[14px] uppercase tracking-[0.2em] font-black break-words">{selectedProduct.seller?.username || '—'}</p>
+                    {/* Purchase Controls */}
+                    <div className="pt-12 mt-auto">
+                      {selectedProduct.status === 'sold' ? (
+                        <button 
+                          disabled 
+                          className="w-full border border-foreground/10 py-5 text-[10px] uppercase tracking-[0.4em] font-black text-foreground/30 bg-foreground/[0.02] cursor-not-allowed"
+                        >
+                          Sold // Listing Inactive
+                        </button>
+                      ) : user && selectedProduct.seller?._id === user.id ? (
+                        <button 
+                          onClick={startEditingProduct}
+                          className="w-full bg-foreground text-background py-5 text-[10px] lg:text-[11px] uppercase tracking-[0.4em] font-black hover:opacity-90 transition-all shadow-xl"
+                        >
+                          Edit Listing Details
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={handleBuyProduct}
+                          disabled={isBuying}
+                          className="w-full bg-foreground text-background py-5 text-[10px] lg:text-[11px] uppercase tracking-[0.4em] font-black hover:opacity-90 transition-all shadow-xl"
+                        >
+                          {isBuying ? 'Processing Purchase...' : 'Buy Now'}
+                        </button>
+                      )}
                     </div>
-                    <div className="space-y-2">
-                      <label className="font-mono text-[9px] uppercase tracking-[0.5em] text-foreground/50 font-black block">Condition</label>
-                      <p className="text-[13px] lg:text-[14px] uppercase tracking-[0.2em] font-black break-words">{selectedProduct.condition}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="font-mono text-[9px] uppercase tracking-[0.5em] text-foreground/50 font-black block">Category</label>
-                      <p className="text-[13px] lg:text-[14px] uppercase tracking-[0.2em] font-black break-words">{selectedProduct.category}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="font-mono text-[9px] uppercase tracking-[0.5em] text-foreground/50 font-black block">Brand</label>
-                      <p className="text-[13px] lg:text-[14px] uppercase tracking-[0.2em] font-black break-words">{selectedProduct.brand || '—'}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="font-mono text-[9px] uppercase tracking-[0.5em] text-foreground/50 font-black block">Fabric</label>
-                      <p className="text-[13px] lg:text-[14px] uppercase tracking-[0.2em] font-black break-words">{selectedProduct.fabric || '—'}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="font-mono text-[9px] uppercase tracking-[0.5em] text-foreground/50 font-black block">Color</label>
-                      <p className="text-[13px] lg:text-[14px] uppercase tracking-[0.2em] font-black break-words">{selectedProduct.color || '—'}</p>
-                    </div>
-                  </div>
-
-                  {selectedProduct.tags && selectedProduct.tags.length > 0 && (
-                    <div className="space-y-5">
-                      <div className="flex items-center gap-2">
-                        <label className="font-mono text-[9px] uppercase tracking-[0.5em] text-foreground/50 font-black block">Style Tags</label>
-                        <span className="font-mono text-[8px] uppercase tracking-widest text-foreground/45 flex items-center gap-1 font-black">
-                          <span>✨</span> AI Tagged
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedProduct.tags.map(tag => (
-                          <span key={tag} className="bg-foreground/5 px-4 py-2 text-[9px] lg:text-[10px] uppercase tracking-widest font-black text-foreground/70 border border-foreground/5">#{tag}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Purchase Controls */}
-                <div className="pt-12 mt-auto">
-                  {selectedProduct.status === 'sold' ? (
-                    <button 
-                      disabled 
-                      className="w-full border border-foreground/10 py-5 text-[10px] uppercase tracking-[0.4em] font-black text-foreground/30 bg-foreground/[0.02] cursor-not-allowed"
-                    >
-                      Sold // Listing Inactive
-                    </button>
-                  ) : user && selectedProduct.seller?._id === user.id ? (
-                    <button 
-                      disabled 
-                      className="w-full border border-foreground/10 py-5 text-[10px] uppercase tracking-[0.4em] font-black text-foreground/40 bg-foreground/5 cursor-not-allowed"
-                    >
-                      Your Product Listing
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={handleBuyProduct}
-                      disabled={isBuying}
-                      className="w-full bg-foreground text-background py-5 text-[10px] lg:text-[11px] uppercase tracking-[0.4em] font-black hover:opacity-90 transition-all shadow-xl"
-                    >
-                      {isBuying ? 'Processing Purchase...' : 'Buy Now'}
-                    </button>
-                  )}
-                </div>
+                  </>
+                )}
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
 
-    </div>
+    </motion.div>
   );
 }

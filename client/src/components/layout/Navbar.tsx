@@ -24,6 +24,8 @@ export default function Navbar() {
   const isHome = pathname === '/';
   const isHeroMode = isHome && !scrolled;
 
+  const visibleLinks = user ? links : [];
+
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 h-24 transition-colors duration-500 ${isHeroMode ? 'bg-transparent' : 'bg-background/95 backdrop-blur-md border-b border-foreground/5'}`}>
       <div className="max-w-[1700px] mx-auto px-8 h-full flex items-center justify-between">
@@ -39,7 +41,7 @@ export default function Navbar() {
 
         {/* Navigation Links */}
         <div className="hidden lg:flex items-center gap-16">
-          {links.map((l) => (
+          {visibleLinks.map((l) => (
             <NavLink
               key={l.to}
               to={l.to}

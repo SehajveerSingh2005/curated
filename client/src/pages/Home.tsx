@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
 import chessVideo from '../assets/hero-1.mp4';
 import finalVideo from '../assets/hero-2.mp4';
 
@@ -39,6 +41,13 @@ const posters = [
 
 export default function Home() {
   const [videoReady, setVideoReady] = useState(false);
+  const { user } = useAuth();
+
+  const heroLinks = [
+    { name: 'Wardrobe', path: '/wardrobe', auth: true },
+    { name: 'Studio', path: '/outfit', auth: true },
+    { name: 'Exchange', path: '/marketplace', auth: true }
+  ].filter(link => !link.auth || !!user);
 
   // Small delay ensures the first frame is painted before fading in.
   const handleCanPlay = () => {
@@ -46,7 +55,12 @@ export default function Home() {
   };
 
   return (
-    <div className="bg-background text-foreground overflow-x-hidden selection:bg-foreground selection:text-background text-[15px]">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+      className="bg-background text-foreground overflow-x-hidden selection:bg-foreground selection:text-background text-[15px]"
+    >
 
       {/* ─── HERO ─────────────────────── */}
       <section 
@@ -83,11 +97,7 @@ export default function Home() {
            <p className="mt-4 text-white text-[14px] tracking-[0.4em] uppercase font-black blend-diff">Your personal fashion system</p>
           
           <div className="flex items-center gap-10 mt-16 reveal-up [animation-delay:0.8s]">
-            {[
-              { name: 'Wardrobe', path: '/wardrobe' },
-              { name: 'Studio', path: '/outfit' },
-              { name: 'Exchange', path: '/marketplace' }
-            ].map((link, i, arr) => (
+            {heroLinks.map((link, i, arr) => (
               <div key={link.name} className="flex items-center gap-10">
                  <Link 
                    to={link.path} 
@@ -231,13 +241,13 @@ export default function Home() {
           </div>
 
           <nav className="flex flex-wrap gap-12 text-[10px] uppercase tracking-[0.45em] font-black text-foreground/20">
-            <Link to="/wardrobe" className="hover:text-foreground">Wardrobe</Link>
-            <Link to="/outfit" className="hover:text-foreground">Studio</Link>
-            <Link to="/inspiration" className="hover:text-foreground">Discover</Link>
-            <Link to="/marketplace" className="hover:text-foreground">Exchange</Link>
+            {user && <Link to="/wardrobe" className="hover:text-foreground">Wardrobe</Link>}
+            {user && <Link to="/outfit" className="hover:text-foreground">Studio</Link>}
+            {user && <Link to="/inspiration" className="hover:text-foreground">Discover</Link>}
+            {user && <Link to="/marketplace" className="hover:text-foreground">Exchange</Link>}
           </nav>
         </div>
       </footer>
-    </div>
+    </motion.div>
   );
 }

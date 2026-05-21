@@ -164,7 +164,7 @@ export const mockProducts: Product[] = [
     price: 85,
     category: 'pants',
     tags: ['vintage', 'denim', 'classic'],
-    seller: 'maya.w',
+    seller: { _id: 'maya_w', username: 'maya.w' },
     condition: 'good',
   },
   {
@@ -174,7 +174,7 @@ export const mockProducts: Product[] = [
     price: 120,
     category: 'accessory',
     tags: ['luxury', 'autumn', 'minimal'],
-    seller: 'archive.edit',
+    seller: { _id: 'archive_edit', username: 'archive.edit' },
     condition: 'like new',
   },
   {
@@ -184,7 +184,7 @@ export const mockProducts: Product[] = [
     price: 195,
     category: 'shirt',
     tags: ['luxury', 'minimal', 'autumn'],
-    seller: 'soft.closet',
+    seller: { _id: 'soft_closet', username: 'soft.closet' },
     condition: 'like new',
   },
   {
@@ -194,7 +194,7 @@ export const mockProducts: Product[] = [
     price: 210,
     category: 'shoes',
     tags: ['classic', 'formal', 'leather'],
-    seller: 'wellshod',
+    seller: { _id: 'wellshod', username: 'wellshod' },
     condition: 'good',
   },
   {
@@ -204,7 +204,7 @@ export const mockProducts: Product[] = [
     price: 155,
     category: 'jacket',
     tags: ['summer', 'minimal', 'linen'],
-    seller: 'the.loft.edit',
+    seller: { _id: 'the_loft_edit', username: 'the.loft.edit' },
     condition: 'new',
   },
   {
@@ -214,7 +214,7 @@ export const mockProducts: Product[] = [
     price: 95,
     category: 'dress',
     tags: ['elegant', 'evening', 'silk'],
-    seller: 'secondskin.co',
+    seller: { _id: 'secondskin_co', username: 'secondskin.co' },
     condition: 'like new',
   },
 ];

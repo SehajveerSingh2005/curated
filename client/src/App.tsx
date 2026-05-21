@@ -29,8 +29,8 @@ function App() {
               <Route path="/signup" element={<Signup />} />
               <Route path="/wardrobe" element={<RouteGuard><Wardrobe /></RouteGuard>} />
               <Route path="/outfit" element={<RouteGuard><OutfitPage /></RouteGuard>} />
-              <Route path="/inspiration" element={<Inspiration />} />
-              <Route path="/marketplace" element={<Marketplace />} />
+              <Route path="/inspiration" element={<RouteGuard><Inspiration /></RouteGuard>} />
+              <Route path="/marketplace" element={<RouteGuard><Marketplace /></RouteGuard>} />
             </Routes>
           </main>
         </div>

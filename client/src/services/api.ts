@@ -43,6 +43,7 @@ export const marketplaceService = {
   createListing: (data: FormData) =>
     api.post('/marketplace', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
   buy: (id: string) => api.post(`/marketplace/${id}/buy`),
+  updateListing: (id: string, data: Record<string, unknown>) => api.put(`/marketplace/${id}`, data),
 };
 
 // ── Auth ──────────────────────────────────────────────────
