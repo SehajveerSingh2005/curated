@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { SlidersHorizontal, Plus, X, Search, Sparkles, Check } from 'lucide-react';
+import { SlidersHorizontal, Plus, X, Search, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { marketplaceService, wardrobeService } from '../services/api';
