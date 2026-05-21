@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { SlidersHorizontal, Plus, X, Search, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { marketplaceService, wardrobeService } from '../services/api';
 import type { Product, WardrobeItem } from '../types';
 import ProductCard from '../components/ui/ProductCard';
+import { Skeleton } from '../components/ui/skeleton';
 import { removeBackground } from '@imgly/background-removal';
 import { AxiosError } from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -27,7 +28,7 @@ export default function Marketplace() {
   const [activeCat, setActiveCat] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [listingOwnerFilter, setListingOwnerFilter] = useState<'others' | 'mine'>('others');
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   // Modals state
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -80,7 +81,9 @@ export default function Marketplace() {
     const handleScroll = () => {
       const offset = window.pageYOffset || document.documentElement.scrollTop;
       const progress = Math.min(1, offset / 100);
-      setScrollProgress(progress);
+      if (containerRef.current) {
+        containerRef.current.style.setProperty('--scroll-progress', progress.toString());
+      }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
@@ -473,21 +476,21 @@ export default function Marketplace() {
   });
 
   return (
-    <div className="min-h-[120vh] pt-24 bg-background text-foreground font-sans selection:bg-foreground selection:text-background">
+    <div ref={containerRef} className="min-h-[120vh] pt-24 bg-background text-foreground font-sans selection:bg-foreground selection:text-background">
 
       {/* Sticky Header */}
       <div 
         className="sticky top-24 z-[45] bg-background/90 backdrop-blur-3xl border-b border-foreground/5 transition-all duration-300"
         style={{ 
-          paddingTop: `${Math.max(1, 2 - scrollProgress) * 16}px`,
-          paddingBottom: `${Math.max(1, 2 - scrollProgress) * 16}px`
-        }}
+          paddingTop: 'calc((2 - var(--scroll-progress, 0)) * 16px)',
+          paddingBottom: 'calc((2 - var(--scroll-progress, 0)) * 16px)'
+        } as React.CSSProperties}
       >
         <div className="max-w-[1700px] mx-auto px-8 lg:px-12">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="flex items-center gap-6">
               <div className="flex flex-col">
-                <div className="flex items-center gap-2 mb-0.5" style={{ opacity: 1 - scrollProgress * 0.4 }}>
+                <div className="flex items-center gap-2 mb-0.5" style={{ opacity: 'calc(1 - var(--scroll-progress, 0) * 0.4)' } as React.CSSProperties}>
                   <span className="font-mono text-[9px] uppercase tracking-[0.50em] text-foreground/50 font-black">
                     Community Exchange // Unit_{filteredProducts.length}
                   </span>
@@ -495,7 +498,7 @@ export default function Marketplace() {
                 </div>
                 <h1 
                   className="font-black uppercase tracking-tighter leading-none" 
-                  style={{ fontSize: `${Math.max(32, 72 - scrollProgress * 40)}px` }}
+                  style={{ fontSize: 'calc(72px - var(--scroll-progress, 0) * 40px)' } as React.CSSProperties}
                 >
                   Market<span className="font-serif italic lowercase font-normal tracking-normal ml-0.5">.</span>
                 </h1>
@@ -627,9 +630,22 @@ export default function Marketplace() {
 
       {/* Product Grid */}
       {loading ? (
-        <div className="py-40 flex flex-col items-center justify-center gap-8">
-          <div className="w-12 h-[1px] bg-foreground/20 animate-pulse"></div>
-          <p className="font-mono text-[9px] uppercase tracking-[0.5em] text-foreground/50 font-black animate-pulse">Loading Exchange...</p>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-16">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className="flex flex-col">
+              <Skeleton className="relative aspect-[3/4] mb-3 border border-foreground/5" />
+              <div className="flex justify-between items-start gap-2">
+                <Skeleton className="h-3 w-2/3" />
+                <Skeleton className="h-3 w-1/5" />
+              </div>
+              <Skeleton className="h-2.5 w-1/3 mt-1.5" />
+              <div className="flex gap-1.5 mt-3">
+                <Skeleton className="h-4 w-7 bg-foreground/10" />
+                <Skeleton className="h-4 w-12" />
+                <Skeleton className="h-4 w-10" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : filteredProducts.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-16">
