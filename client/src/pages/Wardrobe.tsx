@@ -3,7 +3,7 @@ import { Plus, X, Search, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { WardrobeItem } from '../types';
 import WardrobeItemCard from '../components/ui/WardrobeItemCard';
-import { wardrobeService } from '../services/api';
+import { wardrobeService, marketplaceService } from '../services/api';
 import { removeBackground } from '@imgly/background-removal';
 import { AxiosError } from 'axios';
 import {
@@ -22,6 +22,38 @@ export default function Wardrobe() {
   const [showModal, setShowModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<WardrobeItem | null>(null);
   const [editItemId, setEditItemId] = useState<string | null>(null);
+
+  // Listing for sale state
+  const [isListingForSale, setIsListingForSale] = useState(false);
+  const [salePrice, setSalePrice] = useState('');
+  const [saleCondition, setSaleCondition] = useState<'new' | 'like new' | 'good' | 'fair'>('good');
+
+  const handleListForSale = async () => {
+    if (!selectedItem) return;
+    if (!salePrice || isNaN(Number(salePrice)) || Number(salePrice) <= 0) {
+      alert('Please enter a valid price.');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('wardrobeItemId', selectedItem._id);
+      formData.append('price', salePrice);
+      formData.append('condition', saleCondition);
+
+      await marketplaceService.createListing(formData);
+      
+      // Update local state
+      setItems(prev => prev.map(item => item._id === selectedItem._id ? { ...item, forSale: true } : item));
+      setSelectedItem(prev => prev ? { ...prev, forSale: true } : null);
+      setIsListingForSale(false);
+      setSalePrice('');
+      alert('Listing created successfully!');
+    } catch (err: any) {
+      console.error('Failed to create listing:', err);
+      alert(err.response?.data?.msg || 'Failed to list item for sale.');
+    }
+  };
 
   // Form State
   const [newItem, setNewItem] = useState({
@@ -730,7 +762,7 @@ export default function Wardrobe() {
       </Dialog>
 
       {/* ─── VIEW ITEM MODAL ───────────────── */}
-      <Dialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
+      <Dialog open={!!selectedItem} onOpenChange={(open) => { if (!open) { setSelectedItem(null); setIsListingForSale(false); setSalePrice(''); } }}>
         <DialogContent className="w-[80vw] sm:max-w-[90vw] lg:max-w-6xl p-0 gap-0 border-none bg-background rounded-none overflow-hidden shadow-2xl scale-100">
           {selectedItem && (
             <div className="flex flex-col md:grid md:grid-cols-[0.85fr_1fr] h-[95vh] md:h-[80vh] min-h-[550px] w-full">
@@ -782,49 +814,106 @@ export default function Wardrobe() {
                    </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4 pt-12 mt-auto">
-                   <button 
-                     onClick={() => {
-                       if (confirm('Permanently remove this piece from your archive?')) {
-                         wardrobeService.deleteItem(selectedItem._id).then(() => {
-                           setSelectedItem(null);
-                           fetchItems();
-                         });
-                       }
-                     }}
-                     className="flex-1 border border-foreground/10 py-5 px-8 text-[10px] lg:text-[11px] uppercase tracking-[0.5em] font-black hover:bg-red-500 hover:text-white hover:border-red-500 transition-all whitespace-nowrap">
-                     Remove
-                   </button>
-                   <button 
-                     onClick={() => {
-                       setEditItemId(selectedItem._id);
-                       setNewItem({
-                         name: selectedItem.name,
-                         category: selectedItem.category,
-                         tags: selectedItem.tags || [],
-                         imageUrl: selectedItem.imageUrl?.startsWith('/') 
-                           ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${selectedItem.imageUrl}` 
-                           : selectedItem.imageUrl,
-                         brand: selectedItem.brand || '',
-                         fabric: selectedItem.fabric || '',
-                         color: selectedItem.color || '',
-                         file: null
-                       });
-                       const img = new Image();
-                       img.crossOrigin = "anonymous";
-                       img.onload = () => setImgAspect(img.naturalWidth / img.naturalHeight);
-                       img.src = selectedItem.imageUrl?.startsWith('/') 
-                         ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${selectedItem.imageUrl}` 
-                         : selectedItem.imageUrl;
-                         
-                       setSelectedItem(null);
-                       setIsSaving(false);
-                       setIsRemovingBackground(false);
-                       setShowModal(true);
-                     }}
-                     className="flex-1 bg-foreground text-background py-5 px-8 text-[10px] lg:text-[11px] uppercase tracking-[0.2em] font-black hover:opacity-90 transition-all shadow-2xl whitespace-nowrap">
-                     Edit Details
-                   </button>
+                <div className="space-y-6 pt-12 mt-auto">
+                   {isListingForSale ? (
+                     <div className="border border-foreground/10 p-6 space-y-5 bg-background/5">
+                       <div className="flex justify-between items-center">
+                         <span className="font-mono text-[9px] uppercase tracking-[0.4em] text-foreground/50 font-black">List on Market</span>
+                         <button type="button" onClick={() => setIsListingForSale(false)} className="text-[9px] uppercase font-black tracking-widest text-muted-foreground hover:text-foreground">Cancel</button>
+                       </div>
+                       <div className="grid grid-cols-2 gap-6">
+                         <div className="space-y-1.5">
+                           <label className="font-mono text-[9px] uppercase tracking-[0.4em] text-foreground/50 font-black">Price ($)</label>
+                           <input 
+                             type="number" 
+                             value={salePrice} 
+                             onChange={(e) => setSalePrice(e.target.value)} 
+                             placeholder="0.00" 
+                             className="w-full bg-transparent border-b border-foreground/10 py-2 text-[12px] font-black focus:outline-none focus:border-foreground" 
+                           />
+                         </div>
+                         <div className="space-y-1.5">
+                           <label className="font-mono text-[9px] uppercase tracking-[0.4em] text-foreground/50 font-black">Condition</label>
+                           <select 
+                             value={saleCondition} 
+                             onChange={(e) => setSaleCondition(e.target.value as any)} 
+                             className="w-full bg-transparent border-b border-foreground/10 py-2 text-[11px] font-black uppercase tracking-wider focus:outline-none focus:border-foreground"
+                           >
+                             <option value="new">New</option>
+                             <option value="like new">Like New</option>
+                             <option value="good">Good</option>
+                             <option value="fair">Fair</option>
+                           </select>
+                         </div>
+                       </div>
+                       <button 
+                         type="button"
+                         onClick={handleListForSale} 
+                         className="w-full bg-foreground text-background py-3.5 text-[9px] uppercase tracking-[0.4em] font-black hover:opacity-90 transition-all shadow-md"
+                       >
+                         Confirm Listing
+                       </button>
+                     </div>
+                   ) : (
+                     <div className="flex flex-col sm:flex-row gap-4">
+                        {selectedItem.forSale ? (
+                          <div className="flex-1 text-center border border-foreground/20 py-5 text-[10px] uppercase tracking-[0.3em] font-black text-foreground/60 select-none bg-foreground/5">
+                            ✓ Listed for Sale
+                          </div>
+                        ) : (
+                          <button 
+                            onClick={() => setIsListingForSale(true)}
+                            className="flex-1 border border-foreground py-5 px-8 text-[10px] lg:text-[11px] uppercase tracking-[0.2em] font-black hover:bg-foreground hover:text-background transition-all whitespace-nowrap"
+                          >
+                            Sell Item
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => {
+                            if (confirm('Permanently remove this piece from your archive?')) {
+                              wardrobeService.deleteItem(selectedItem._id).then(() => {
+                                setSelectedItem(null);
+                                fetchItems();
+                              });
+                            }
+                          }}
+                          className="flex-1 border border-foreground/10 py-5 px-8 text-[10px] lg:text-[11px] uppercase tracking-[0.5em] font-black hover:bg-red-500 hover:text-white hover:border-red-500 transition-all whitespace-nowrap"
+                        >
+                          Remove
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setEditItemId(selectedItem._id);
+                            setNewItem({
+                              name: selectedItem.name,
+                              category: selectedItem.category,
+                              tags: selectedItem.tags || [],
+                              imageUrl: selectedItem.imageUrl?.startsWith('/') 
+                                ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${selectedItem.imageUrl}` 
+                                : selectedItem.imageUrl,
+                              brand: selectedItem.brand || '',
+                              fabric: selectedItem.fabric || '',
+                              color: selectedItem.color || '',
+                              file: null
+                            });
+                            const img = new Image();
+                            img.crossOrigin = "anonymous";
+                            img.onload = () => setImgAspect(img.naturalWidth / img.naturalHeight);
+                            img.src = selectedItem.imageUrl?.startsWith('/') 
+                              ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${selectedItem.imageUrl}` 
+                              : selectedItem.imageUrl;
+                              
+                            setSelectedItem(null);
+                            setIsSaving(false);
+                            setIsRemovingBackground(false);
+                            setShowModal(true);
+                          }}
+                          className="flex-1 bg-foreground text-background py-5 px-8 text-[10px] lg:text-[11px] uppercase tracking-[0.2em] font-black hover:opacity-90 transition-all shadow-2xl whitespace-nowrap"
+                        >
+                          Edit Details
+                        </button>
+                     </div>
+                   )}
                 </div>
               </div>
             </div>

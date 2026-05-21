@@ -39,9 +39,10 @@ export const inspirationService = {
 
 // ── Marketplace ───────────────────────────────────────────
 export const marketplaceService = {
-  getAll: (filters?: { category?: string; tag?: string }) => api.get('/marketplace', { params: filters }),
+  getAll: (filters?: { category?: string; tag?: string; sort?: string }) => api.get('/marketplace', { params: filters }),
   createListing: (data: FormData) =>
     api.post('/marketplace', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  buy: (id: string) => api.post(`/marketplace/${id}/buy`),
 };
 
 // ── Auth ──────────────────────────────────────────────────
