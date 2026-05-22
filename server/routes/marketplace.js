@@ -143,11 +143,12 @@ router.post('/:id/buy', auth, async (req, res) => {
     product.buyer = req.user.id;
     await product.save();
 
-    // If it was listed from a wardrobe item, update the wardrobe item status
+    // If it was listed from a wardrobe item, update the wardrobe item status and transfer ownership to buyer
     if (product.wardrobeItemId) {
       const wardrobeItem = await WardrobeItem.findById(product.wardrobeItemId);
       if (wardrobeItem) {
         wardrobeItem.forSale = false;
+        wardrobeItem.userId = req.user.id;
         await wardrobeItem.save();
       }
     }
