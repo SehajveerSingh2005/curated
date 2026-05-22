@@ -79,6 +79,10 @@ const fetchAndCacheFeeds = async () => {
 
         if (!imageUrl) return;
 
+        if (item.title && item.title.toLowerCase().includes("hulu renews 'the testaments'")) {
+          return;
+        }
+
         const categoryStrings = (item.categories || []).map(c => {
           if (typeof c === 'string') return c;
           if (c && typeof c === 'object') {

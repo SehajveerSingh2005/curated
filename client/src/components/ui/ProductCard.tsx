@@ -1,9 +1,14 @@
 import type { Product } from '../../types';
+import { useAuth } from '../../context/AuthContext';
 
 interface Props { product: Product; }
 
 export default function ProductCard({ product }: Props) {
-  const sellerName = typeof product.seller === 'object' ? product.seller?.username : product.seller;
+  const { user } = useAuth();
+  const isOwnListing = user && (typeof product.seller === 'object' ? product.seller?._id === user.id : product.seller === user.id);
+  const sellerName = isOwnListing 
+    ? `${typeof product.seller === 'object' ? product.seller?.username : product.seller} (You)` 
+    : (typeof product.seller === 'object' ? product.seller?.username : product.seller);
 
   return (
     <div className="group cursor-pointer">

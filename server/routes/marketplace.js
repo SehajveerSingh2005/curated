@@ -163,4 +163,47 @@ router.post('/:id/buy', auth, async (req, res) => {
   }
 });
 
+// @route   PUT /api/marketplace/:id
+// @desc    Update details of a listed product
+router.put('/:id', auth, async (req, res) => {
+  try {
+    const { name, price, category, tags, color, brand, fabric, condition } = req.body;
+
+    let product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ msg: 'Product listing not found' });
+    }
+
+    // Ensure the current user is the seller
+    if (product.seller.toString() !== req.user.id) {
+      return res.status(401).json({ msg: 'Not authorized to modify this listing' });
+    }
+
+    if (product.status === 'sold') {
+      return res.status(400).json({ msg: 'Cannot edit details of a sold product' });
+    }
+
+    // Update fields
+    if (name) product.name = name;
+    if (price !== undefined) product.price = Number(price);
+    if (category) product.category = category.toLowerCase();
+    if (tags) product.tags = Array.isArray(tags) ? tags : JSON.parse(tags);
+    if (color !== undefined) product.color = color;
+    if (brand !== undefined) product.brand = brand;
+    if (fabric !== undefined) product.fabric = fabric;
+    if (condition) product.condition = condition;
+
+    await product.save();
+
+    const populatedProduct = await Product.findById(product._id)
+      .populate('seller', 'username')
+      .populate('buyer', 'username');
+
+    res.json(populatedProduct);
+  } catch (err) {
+    console.error('Update product error:', err);
+    res.status(500).send('Server Error');
+  }
+});
+
 module.exports = router;

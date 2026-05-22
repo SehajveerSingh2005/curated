@@ -108,7 +108,13 @@ export default function Inspiration() {
   });
 
   return (
-    <div ref={containerRef} className="min-h-[120vh] pt-24 bg-background text-foreground font-sans">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+      ref={containerRef} 
+      className="min-h-[120vh] pt-24 bg-background text-foreground font-sans"
+    >
       
       <div 
         className="sticky top-24 z-[45] bg-background/90 backdrop-blur-3xl border-b border-foreground/5 transition-all duration-300"
@@ -260,6 +266,6 @@ export default function Inspiration() {
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/api';
 import { ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
@@ -62,7 +63,12 @@ export default function Signup() {
   };
 
   return (
-    <div className="h-screen grid lg:grid-cols-2 bg-background selection:bg-foreground selection:text-background overflow-hidden font-sans">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+      className="h-screen grid lg:grid-cols-2 bg-background selection:bg-foreground selection:text-background overflow-hidden font-sans"
+    >
       {/* ─── IMAGE SIDE ─────────────────────────────────── */}
       <div className="hidden lg:flex relative flex-col items-center justify-center overflow-hidden border-r border-foreground/5 bg-muted">
         {!imageLoaded && (
@@ -206,6 +212,6 @@ export default function Signup() {
           </footer>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
