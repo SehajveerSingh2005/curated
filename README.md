@@ -1,8 +1,4 @@
-<p align="center">
-  <img src="assets/screenshots/landing-page.png" width="100%" alt="Curated Landing Page">
-</p>
-
-<h1 align="center">CURATED 👗</h1>
+<h1 align="center">CURATED</h1>
 
 <p align="center">
   <strong>An AI-Powered Digital Wardrobe & Peer-to-Peer Resale Marketplace</strong>
@@ -16,9 +12,12 @@
   <img src="https://img.shields.io/badge/Cloudinary-3448C5?style=for-the-badge&logo=cloudinary&logoColor=white" alt="Cloudinary">
 </p>
 
+<img width="1523" height="923" alt="image" src="https://github.com/user-attachments/assets/c65fbc56-31d8-451a-9285-4e3b4f14aa1f" />
+
+
 ---
 
-## 🎨 Overview
+## Overview
 
 **Curated** is a high-end, minimalist digital archive and fashion ecosystem. It transforms how users interact with their clothing by merging smart wardrobe management, automated styling curation, and a peer-to-peer resale marketplace into a unified, high-contrast, editorial experience.
 
@@ -26,44 +25,38 @@ Built with the MERN stack, the platform uses AI-assisted categorization, high-sp
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-- 👕 **Smart Wardrobe Archive**: Digitize and organize your wardrobe. Filter items by color, season, brand, or category.
-- 🤖 **AI Auto-Tagging**: Automatically scans uploaded clothing items, detects attributes, and generates tags (powered by Google Vision / AI services).
-- 🎨 **Outfit Studio**: Compose, archive, and curate custom outfit combinations directly from your digital wardrobe.
-- 🛍️ **Integrated Marketplace**: List closet items for sale, browse listings from other users, and trade securely in a peer-to-peer fashion exchange.
-- 💡 **Inspiration Feed**: A curated stream of global fashion trends. Save inspiring looks to your mood board and link back to wardrobe items.
-- ☁️ **Media Delivery**: Real-time image optimization, resizing, and hosting powered by Cloudinary.
+- **Smart Wardrobe Archive**: Digitize and organize your wardrobe. Filter items by color, season, brand, or category.
+- **AI Auto-Tagging**: Automatically scans uploaded clothing items, detects attributes, and generates tags (powered by Google Vision / AI services).
+- **Outfit Studio**: Compose, archive, and curate custom outfit combinations directly from your digital wardrobe.
+- **Integrated Marketplace**: List closet items for sale, browse listings from other users, and trade securely in a peer-to-peer fashion exchange.
+- **Inspiration Feed**: A curated stream of global fashion trends. Save inspiring looks to your mood board and link back to wardrobe items.
+- **Media Delivery**: Real-time image optimization, resizing, and hosting powered by Cloudinary.
 
 ---
 
-## 📸 Project Screenshots
+## Project Screenshots
 
-### 🏠 Home Page
-The editorial, high-contrast monochrome entry point to the Curated fashion system.
-<p align="center">
-  <img src="assets/screenshots/landing-page.png" width="90%" alt="Home Screen">
-</p>
-
-### 👕 Smart Wardrobe
+### Smart Wardrobe
 Digitally track and organize your clothing collection with deep filtering.
 <p align="center">
   <img src="assets/screenshots/wardrobe.png" width="90%" alt="Wardrobe Screen">
 </p>
 
-### 🎨 Outfit Studio
+### Outfit Studio
 The creative dashboard to combine, experiment, and archive outfit fits.
 <p align="center">
   <img src="assets/screenshots/studio.png" width="90%" alt="Studio Screen">
 </p>
 
-### 💡 Inspiration Feed
+### Inspiration Feed
 Discover global fashion trends, collect ideas, and build your digital aesthetic.
 <p align="center">
   <img src="assets/screenshots/inspiration.png" width="90%" alt="Inspiration Screen">
 </p>
 
-### 🛍️ Marketplace
+### Marketplace
 A connected peer-to-peer resale environment to buy and sell clothes directly.
 <p align="center">
   <img src="assets/screenshots/marketplace.png" width="90%" alt="Marketplace Screen">
@@ -71,7 +64,7 @@ A connected peer-to-peer resale environment to buy and sell clothes directly.
 
 ---
 
-## 🏗️ Technical Architecture
+## Technical Architecture
 
 ```
                  +-----------------------+
@@ -96,7 +89,7 @@ A connected peer-to-peer resale environment to buy and sell clothes directly.
 
 ---
 
-## 🔄 End-to-End Workflow
+## End-to-End Workflow
 
 1. **Upload**: User uploads clothing photo -> sent to Express backend.
 2. **Process**: Image uploaded to **Cloudinary** -> URL returned -> AI tags generated.
@@ -106,7 +99,7 @@ A connected peer-to-peer resale environment to buy and sell clothes directly.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Frontend**: React, React Router, Vite, Vanilla CSS (OKLCH color system)
 - **Backend**: Node.js, Express.js, JWT, Multer
@@ -116,7 +109,7 @@ A connected peer-to-peer resale environment to buy and sell clothes directly.
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 curated/
@@ -139,7 +132,7 @@ curated/
 
 ---
 
-## ⚙️ Installation & Setup
+## Installation & Setup
 
 ### Prerequisites
 - Node.js (v18+ recommended)
@@ -187,7 +180,7 @@ npm run dev
 
 ---
 
-## 🚀 Recommended Pull Request Git Workflow
+## Recommended Pull Request Git Workflow
 
 To collaborate cleanly, team members should follow this Pull Request workflow:
 
@@ -213,7 +206,7 @@ To collaborate cleanly, team members should follow this Pull Request workflow:
 
 ---
 
-## 👥 Contributors
+## Contributors
 
 - **Pratham Jindal**
 - **Ridham Garg**
