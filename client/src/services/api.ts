@@ -14,6 +14,15 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+export const getMediaURL = (url?: string) => {
+  if (!url) return '';
+  if (url.startsWith('/')) {
+    const apiURL = import.meta.env.VITE_API_URL;
+    return `${apiURL ? apiURL.replace('/api', '') : window.location.origin}${url}`;
+  }
+  return url;
+};
+
 // ── Wardrobe ──────────────────────────────────────────────
 export const wardrobeService = {
   getAll: () => api.get('/wardrobe'),

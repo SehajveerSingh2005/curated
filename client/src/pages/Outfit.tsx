@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Sparkles, RefreshCw, X, Plus, CheckCircle2, Trash2, Download, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toPng } from 'html-to-image';
-import { outfitService, wardrobeService } from '../services/api';
+import { outfitService, wardrobeService, getMediaURL } from '../services/api';
 import type { WardrobeItem, Outfit } from '../types';
 import { Dialog, DialogContent } from '../components/ui/dialog';
 import { AxiosError } from 'axios';
@@ -213,9 +213,7 @@ export default function OutfitPage() {
   };
 
   const getImageUrl = (url?: string) => {
-    if (!url) return '';
-    if (url.startsWith('/')) return `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${url}`;
-    return url;
+    return getMediaURL(url);
   };
 
   return (

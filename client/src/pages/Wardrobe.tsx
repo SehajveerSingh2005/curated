@@ -3,7 +3,7 @@ import { Plus, X, Search, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { WardrobeItem } from '../types';
 import WardrobeItemCard from '../components/ui/WardrobeItemCard';
-import { wardrobeService, marketplaceService } from '../services/api';
+import { wardrobeService, marketplaceService, getMediaURL } from '../services/api';
 import { removeBackground } from '@imgly/background-removal';
 import { AxiosError } from 'axios';
 import {
@@ -771,9 +771,7 @@ export default function Wardrobe() {
               {/* Left Side: Image Container (Narrower) */}
               <div className="bg-white flex flex-col items-center justify-center overflow-hidden border-b md:border-b-0 md:border-r border-foreground/5 h-[40vh] md:h-full">
                 <img 
-                  src={selectedItem.imageUrl?.startsWith('/') 
-                    ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${selectedItem.imageUrl}` 
-                    : selectedItem.imageUrl} 
+                  src={getMediaURL(selectedItem.imageUrl)} 
                   className="w-full h-full object-cover opacity-95 transition-opacity duration-700 hover:opacity-100"
                   alt={selectedItem.name} 
                 />
@@ -890,9 +888,7 @@ export default function Wardrobe() {
                               name: selectedItem.name,
                               category: selectedItem.category,
                               tags: selectedItem.tags || [],
-                              imageUrl: selectedItem.imageUrl?.startsWith('/') 
-                                ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${selectedItem.imageUrl}` 
-                                : selectedItem.imageUrl,
+                              imageUrl: getMediaURL(selectedItem.imageUrl),
                               brand: selectedItem.brand || '',
                               fabric: selectedItem.fabric || '',
                               color: selectedItem.color || '',
@@ -901,9 +897,7 @@ export default function Wardrobe() {
                             const img = new Image();
                             img.crossOrigin = "anonymous";
                             img.onload = () => setImgAspect(img.naturalWidth / img.naturalHeight);
-                            img.src = selectedItem.imageUrl?.startsWith('/') 
-                              ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${selectedItem.imageUrl}` 
-                              : selectedItem.imageUrl;
+                            img.src = getMediaURL(selectedItem.imageUrl);
                               
                             setSelectedItem(null);
                             setIsSaving(false);

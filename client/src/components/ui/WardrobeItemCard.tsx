@@ -2,14 +2,15 @@ import type { WardrobeItem } from '../../types';
 import { ArrowUpRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+import { getMediaURL } from '../../services/api';
+
 interface Props {
   item: WardrobeItem;
   onSell?: (item: WardrobeItem) => void;
 }
 
 export default function WardrobeItemCard({ item }: Props) {
-  const API_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
-  const imageUrl = item.imageUrl?.startsWith('/') ? `${API_URL}${item.imageUrl}` : item.imageUrl;
+  const imageUrl = getMediaURL(item.imageUrl);
 
   return (
     <div className="group cursor-pointer space-y-8">

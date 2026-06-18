@@ -5,15 +5,15 @@ import {
   DialogContent,
 } from "./dialog";
 
+import { getMediaURL } from '../../services/api';
+
 interface Props { outfit: Outfit; }
 
 export default function OutfitCard({ outfit }: Props) {
   const [showModal, setShowModal] = useState(false);
 
   const getImageUrl = (url?: string) => {
-    if (!url) return '';
-    if (url.startsWith('/')) return `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${url}`;
-    return url;
+    return getMediaURL(url);
   };
 
   return (

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { SlidersHorizontal, Plus, X, Search, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { marketplaceService, wardrobeService } from '../services/api';
+import { marketplaceService, wardrobeService, getMediaURL } from '../services/api';
 import type { Product, WardrobeItem } from '../types';
 import ProductCard from '../components/ui/ProductCard';
 import { Skeleton } from '../components/ui/skeleton';
@@ -819,9 +819,7 @@ export default function Marketplace() {
                     <form onSubmit={handleListWardrobeItemSubmit} className="max-w-md mx-auto w-full py-10 space-y-10">
                       <div className="flex items-center gap-6 border-b border-foreground/5 pb-8">
                         <img 
-                          src={selectedWardrobeItem.imageUrl?.startsWith('/') 
-                            ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${selectedWardrobeItem.imageUrl}` 
-                            : selectedWardrobeItem.imageUrl}
+                          src={getMediaURL(selectedWardrobeItem.imageUrl)}
                           alt={selectedWardrobeItem.name}
                           className="w-20 h-24 object-cover bg-muted"
                         />
@@ -902,9 +900,7 @@ export default function Marketplace() {
                             >
                               <div className="aspect-[3/4] overflow-hidden bg-muted mb-3">
                                 <img 
-                                  src={item.imageUrl?.startsWith('/') 
-                                    ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${item.imageUrl}` 
-                                    : item.imageUrl}
+                                  src={getMediaURL(item.imageUrl)}
                                   alt={item.name}
                                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                 />
@@ -1146,9 +1142,7 @@ export default function Marketplace() {
               {/* Left Side: Product Image */}
               <div className="bg-white flex flex-col items-center justify-center overflow-hidden border-b md:border-b-0 md:border-r border-foreground/5 h-[40vh] md:h-full relative">
                 <img 
-                  src={selectedProduct.imageUrl?.startsWith('/') 
-                    ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${selectedProduct.imageUrl}` 
-                    : selectedProduct.imageUrl} 
+                  src={getMediaURL(selectedProduct.imageUrl)} 
                   className={`w-full h-full object-cover opacity-95 transition-opacity duration-700 hover:opacity-100 ${selectedProduct.status === 'sold' ? 'opacity-40 grayscale' : ''}`}
                   alt={selectedProduct.name} 
                 />

@@ -34,22 +34,17 @@ app.get('/', (req, res) => {
 const MONGO_URI = process.env.MONGO_URI;
 
 if (!MONGO_URI) {
-  console.error('FATAL ERROR: MONGO_URI is not defined in .env');
-  process.exit(1);
-}
-
-mongoose.connect(MONGO_URI)
-  .then(() => {
-    const dbType = MONGO_URI.includes('atlassian') || MONGO_URI.includes('mongodb+srv') ? 'Cloud (Atlas)' : 'Local';
-    console.log(`Connected to MongoDB [${dbType}]`);
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
+  console.error('WARNING: MONGO_URI is not defined in the environment variables.');
+} else {
+  mongoose.connect(MONGO_URI)
+    .then(() => {
+      const dbType = MONGO_URI.includes('atlassian') || MONGO_URI.includes('mongodb+srv') ? 'Cloud (Atlas)' : 'Local';
+      console.log(`Connected to MongoDB [${dbType}]`);
+    })
+    .catch((err) => {
+      console.error('Failed to connect to MongoDB:', err.message);
     });
-  })
-  .catch((err) => {
-    console.error('Failed to connect to MongoDB:', err.message);
-    process.exit(1);
-  });
+}
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -60,3 +55,12 @@ app.use((err, req, res, next) => {
     stack: err.stack
   });
 });
+
+// Start the server only when running locally (direct execution)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+}
+
+module.exports = app;

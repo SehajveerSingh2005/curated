@@ -1,5 +1,6 @@
 import type { Product } from '../../types';
 import { useAuth } from '../../context/AuthContext';
+import { getMediaURL } from '../../services/api';
 
 interface Props { product: Product; }
 
@@ -14,9 +15,7 @@ export default function ProductCard({ product }: Props) {
     <div className="group cursor-pointer">
       <div className="relative aspect-[3/4] overflow-hidden bg-muted mb-3">
         <img
-          src={product.imageUrl?.startsWith('/') 
-            ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${product.imageUrl}` 
-            : product.imageUrl}
+          src={getMediaURL(product.imageUrl)}
           alt={product.name}
           className={`w-full h-full object-cover transition-all duration-700 group-hover:scale-[1.04] ${
             product.status === 'sold' ? 'opacity-40 grayscale' : ''
